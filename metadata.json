@@ -1,0 +1,5 @@
+{
+  "name": "LMS",
+  "description": "A modern, AI-powered Learning Management System designed to fulfill the user stories of the Hubexus Hackathon. It features distinct roles for students and teachers, course management, assignments, and AI-generated content to enhance the learning experience.",
+  "requestFramePermissions": []
+}

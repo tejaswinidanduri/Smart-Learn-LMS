@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Learn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              'primary': '#00ffff',       // Neon Cyan
+              'secondary': '#9333ea',     // Neon Purple
+              'accent': '#3b82f6',        // Vibrant Blue
+              'background': '#0a0c1c',    // Deep Space Blue
+              'surface': 'rgba(10, 12, 28, 0.7)', // For Glassmorphism
+              'copy': '#e5e7eb',           // Light Gray (for text)
+              'copy-light': '#9ca3af',   // Medium Gray
+              'copy-lighter': '#6b7280',  // Darker Gray
+              'success': '#4ade80',        // Neon Green
+              'danger': '#f43f5e',         // Rose 500
+            },
+          },
+        },
+      }
+    </script>
+    <style>
+      .splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #0a0c1c; /* background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: fadeOutSplashScreen 0.5s ease-in forwards 2.5s;
+      }
+
+      .logo-container {
+        animation: fadeInAndScale 2s ease-out forwards 0.5s;
+        opacity: 0;
+      }
+      
+      @keyframes fadeOutSplashScreen {
+        from { opacity: 1; }
+        to { opacity: 0; pointer-events: none; }
+      }
+      
+      @keyframes fadeInAndScale {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      
+      /* New Global Styles */
+      :root {
+        --radius: 0.75rem;
+        --shadow-neon-primary: 0 0 5px theme('colors.primary'), 0 0 10px theme('colors.primary');
+        --shadow-neon-secondary: 0 0 5px theme('colors.secondary'), 0 0 10px theme('colors.secondary');
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: theme('colors.background');
+        background: linear-gradient(270deg, theme('colors.background'), theme('colors.secondary/20'), theme('colors.accent/20'), theme('colors.primary/20'), theme('colors.background'));
+        background-size: 600% 600%;
+        animation: gradient-animation 30s ease infinite;
+        background-attachment: fixed;
+      }
+      
+      .glassmorphism {
+        background: theme('colors.surface');
+        backdrop-filter: blur(12px);
+        --tw-border-opacity: 1;
+        border-color: rgba(255, 255, 255, 0.1);
+        border-width: 1px;
+      }
+      
+      .neon-glow-primary {
+        box-shadow: var(--shadow-neon-primary);
+      }
+      
+      .neon-text-primary {
+         text-shadow: 0 0 5px theme('colors.primary'), 0 0 10px theme('colors.primary/70');
+      }
+
+      * {
+        transition: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, background-position 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .animated-gradient-bar {
+        background-size: 200% 200%;
+        animation: gradient-animation 5s ease infinite;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+      .animate-fade-in-up { animation: fadeInUp 0.3s ease-out forwards; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.4",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.24.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-background text-copy antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
