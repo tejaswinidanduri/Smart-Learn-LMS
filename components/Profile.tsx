@@ -1,10 +1,16 @@
-
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../App';
 import { Card, Input, Button, TextArea, Modal } from './ui';
 import { UserCircleIcon, BookOpenIcon, UsersIcon, ChartPieIcon, ClockIcon, ClipboardCheckIcon, CreditCardIcon, GooglePayLogo, PhonePeLogo, CheckCircleIcon, PaytmLogo } from './Icons';
 import type { Course, User, Fee, PaymentMethod } from '../types';
+
+// A helper function for password validation
+const isPasswordValid = (password: string): boolean => {
+    // At least 8 characters, one uppercase, one lowercase, one number, one special character
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    return passwordRegex.test(password);
+};
 
 const Profile: React.FC = () => {
     const { currentUser } = useAppContext();
@@ -15,7 +21,7 @@ const Profile: React.FC = () => {
             <Link to="/" className="mb-4 block text-sm text-primary hover:underline">
                 &larr; Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+            <h1 className="text-3xl font-bold mb-6 text-copy">My Profile</h1>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-1">
                     <ProfileCard />
@@ -81,6 +87,10 @@ const ProfileCard: React.FC = () => {
         }
 
         if (formData.password) {
+            if (!isPasswordValid(formData.password)) {
+                alert("Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.");
+                return;
+            }
             if (formData.password !== formData.confirmPassword) {
                 alert("Passwords do not match.");
                 return;
@@ -108,7 +118,7 @@ const ProfileCard: React.FC = () => {
             <div className="p-6">
                 <div className="flex flex-col items-center text-center">
                     <UserCircleIcon className="h-24 w-24 text-copy-lighter" />
-                    <h2 className="text-2xl font-bold mt-4">{currentUser!.name}</h2>
+                    <h2 className="text-2xl font-bold mt-4 text-copy">{currentUser!.name}</h2>
                     <p className="text-copy-light">{currentUser!.email}</p>
                     <p className="text-sm bg-primary/20 text-primary font-semibold px-3 py-1 rounded-full mt-2">{currentUser!.role}</p>
                 </div>
@@ -151,7 +161,7 @@ const ProfileCard: React.FC = () => {
                             <Input label="Date of Birth" name="dateOfBirth" type="date" value={formData.dateOfBirth} onChange={handleChange} />
                             <div>
                                 <label htmlFor="gender" className="block text-sm font-medium text-copy-light">Gender</label>
-                                <select id="gender" name="gender" value={formData.gender} onChange={handleChange} className="mt-1 block w-full bg-black/20 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm">
+                                <select id="gender" name="gender" value={formData.gender} onChange={handleChange} className="mt-1 block w-full bg-surface/50 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm">
                                     <option>Prefer not to say</option>
                                     <option>Male</option>
                                     <option>Female</option>
@@ -161,7 +171,12 @@ const ProfileCard: React.FC = () => {
                             <Input label="Blood Group" name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} />
                             <Input label="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} />
                             <TextArea label="About Me" name="bio" value={formData.bio} onChange={handleChange} rows={4} placeholder="Tell us a little about yourself..."/>
-                            <Input label="New Password (optional)" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="••••••••"/>
+                            <div>
+                                <Input label="New Password (optional)" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="••••••••"/>
+                                <p className="text-xs text-copy-lighter mt-1.5 px-1">
+                                    Must be 8+ characters and contain an uppercase, lowercase, number, and special character.
+                                </p>
+                            </div>
                             <Input label="Confirm New Password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••"/>
                             <div className="flex gap-2 justify-end">
                                 <Button type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
@@ -232,21 +247,21 @@ const StudentStats: React.FC = () => {
     return (
         <Card>
             <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">My Progress</h3>
+                <h3 className="text-xl font-semibold mb-4 text-copy">My Progress</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div className="bg-black/20 p-4 rounded-lg">
+                    <div className="bg-surface/60 p-4 rounded-lg">
                         <BookOpenIcon className="h-8 w-8 mx-auto text-primary" />
-                        <p className="text-3xl font-bold mt-2">{stats.enrolledCoursesCount}</p>
+                        <p className="text-3xl font-bold mt-2 text-copy">{stats.enrolledCoursesCount}</p>
                         <p className="text-copy-light">Courses Enrolled</p>
                     </div>
-                    <div className="bg-black/20 p-4 rounded-lg">
+                    <div className="bg-surface/60 p-4 rounded-lg">
                         <ChartPieIcon />
-                        <p className="text-3xl font-bold mt-2">{stats.averageGrade.toFixed(1)}%</p>
+                        <p className="text-3xl font-bold mt-2 text-copy">{stats.averageGrade.toFixed(1)}%</p>
                         <p className="text-copy-light">Average Grade</p>
                     </div>
-                    <div className="bg-black/20 p-4 rounded-lg">
+                    <div className="bg-surface/60 p-4 rounded-lg">
                         <ClipboardCheckIcon className="h-8 w-8 mx-auto text-primary" />
-                        <p className="text-3xl font-bold mt-2">{stats.submissionsCount}</p>
+                        <p className="text-3xl font-bold mt-2 text-copy">{stats.submissionsCount}</p>
                         <p className="text-copy-light">Graded Submissions</p>
                     </div>
                 </div>
@@ -271,13 +286,13 @@ const StudentFees: React.FC<{ onPayClick: (fee: Fee) => void }> = ({ onPayClick 
     return (
         <Card>
             <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">My Fees</h3>
+                <h3 className="text-xl font-semibold mb-4 text-copy">My Fees</h3>
                 {fees.length > 0 ? (
                     <ul className="space-y-3">
                         {fees.map(fee => (
-                            <li key={fee.id} className="p-3 bg-black/20 rounded-md border border-white/10 flex flex-col sm:flex-row justify-between sm:items-center">
+                            <li key={fee.id} className="p-3 bg-surface/60 rounded-md border border-white/10 flex flex-col sm:flex-row justify-between sm:items-center">
                                 <div>
-                                    <p className="font-semibold">{fee.description}</p>
+                                    <p className="font-semibold text-copy">{fee.description}</p>
                                     <p className="text-sm text-copy-light">Amount: <span className="font-medium text-copy">${fee.amount.toFixed(2)}</span> | Due: {new Date(fee.dueDate).toLocaleDateString()}</p>
                                 </div>
                                 <div className="flex items-center gap-4 mt-2 sm:mt-0">
@@ -327,8 +342,8 @@ const PaymentModal: React.FC<{ fee: Fee; isOpen: boolean; onClose: () => void; }
                 {paymentState === 'options' && (
                     <>
                         <p className="text-copy-light">You are paying for:</p>
-                        <p className="text-lg font-semibold">{fee.description}</p>
-                        <p className="text-4xl font-bold my-4">${fee.amount.toFixed(2)}</p>
+                        <p className="text-lg font-semibold text-copy">{fee.description}</p>
+                        <p className="text-4xl font-bold my-4 text-copy">${fee.amount.toFixed(2)}</p>
                         <div className="space-y-3 mt-6">
                             <PaymentButton method="Card">
                                 <CreditCardIcon className="mr-4 h-6 w-6 text-copy group-hover:text-primary"/>
@@ -410,7 +425,7 @@ const StudentActivityFeed: React.FC = () => {
     return (
         <Card>
             <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
+                <h3 className="text-xl font-semibold mb-4 text-copy">Recent Activity</h3>
                 {activity.length > 0 ? (
                     <ul className="space-y-4">
                         {activity.map((item, index) => {
@@ -439,11 +454,11 @@ const StudentCourseList: React.FC = () => {
     return (
         <Card>
             <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">My Courses</h3>
+                <h3 className="text-xl font-semibold mb-4 text-copy">My Courses</h3>
                 {enrolledCourses.length > 0 ? (
                     <ul className="space-y-2">
                         {enrolledCourses.map(course => (
-                            <li key={course.id} className="p-3 bg-black/20 rounded-md hover:bg-black/30 transition-colors">
+                            <li key={course.id} className="p-3 bg-surface/60 rounded-md hover:bg-surface transition-colors">
                                 <Link to={`/course/${course.id}`} className="font-semibold text-primary hover:underline">{course.title}</Link>
                             </li>
                         ))}
@@ -482,16 +497,16 @@ const TeacherStats: React.FC = () => {
     return (
          <Card>
             <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">My Teaching Summary</h3>
+                <h3 className="text-xl font-semibold mb-4 text-copy">My Teaching Summary</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
-                    <div className="bg-black/20 p-4 rounded-lg">
+                    <div className="bg-surface/60 p-4 rounded-lg">
                         <BookOpenIcon className="h-8 w-8 mx-auto text-primary" />
-                        <p className="text-3xl font-bold mt-2">{stats.taughtCoursesCount}</p>
+                        <p className="text-3xl font-bold mt-2 text-copy">{stats.taughtCoursesCount}</p>
                         <p className="text-copy-light">Courses Taught</p>
                     </div>
-                    <div className="bg-black/20 p-4 rounded-lg">
+                    <div className="bg-surface/60 p-4 rounded-lg">
                         <UsersIcon className="h-8 w-8 mx-auto text-primary" />
-                        <p className="text-3xl font-bold mt-2">{stats.totalStudents}</p>
+                        <p className="text-3xl font-bold mt-2 text-copy">{stats.totalStudents}</p>
                         <p className="text-copy-light">Total Students</p>
                     </div>
                 </div>
@@ -515,7 +530,7 @@ const TeacherRecentSubmissions: React.FC = () => {
     return (
         <Card>
             <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Needs Grading</h3>
+                <h3 className="text-xl font-semibold mb-4 text-copy">Needs Grading</h3>
                 {ungradedSubmissions.length > 0 ? (
                     <ul className="space-y-4">
                         {ungradedSubmissions.map(sub => {
@@ -548,11 +563,11 @@ const TeacherCourseList: React.FC = () => {
     return (
         <Card>
             <div className="p-6">
-                <h3 className="text-xl font-semibold mb-4">My Courses</h3>
+                <h3 className="text-xl font-semibold mb-4 text-copy">My Courses</h3>
                 {taughtCourses.length > 0 ? (
                     <ul className="space-y-2">
                         {taughtCourses.map(course => (
-                            <li key={course.id} className="p-3 bg-black/20 rounded-md hover:bg-black/30 transition-colors">
+                            <li key={course.id} className="p-3 bg-surface/60 rounded-md hover:bg-surface transition-colors">
                                 <Link to={`/course/${course.id}`} className="font-semibold text-primary hover:underline">{course.title}</Link>
                             </li>
                         ))}

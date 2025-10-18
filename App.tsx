@@ -92,6 +92,7 @@ interface AppContextType {
   findFeesByCourseId: (courseId: string) => Fee[];
   findVideoMaterialsByCourseId: (courseId: string) => VideoMaterial[];
   findVideoNotesByVideoIdAndStudentId: (videoId: string, studentId: string) => VideoNote[];
+  calculateCourseGrade: (courseId: string, studentId: string) => number | null;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -533,6 +534,34 @@ const App: React.FC = () => {
     setVideoNotes(prev => [...prev, newNote]);
   };
 
+  const calculateCourseGrade = (courseId: string, studentId: string): number | null => {
+    const courseAssignments = assignments.filter(a => a.courseId === courseId);
+    const courseQuizzes = quizzes.filter(q => q.courseId === courseId);
+
+    const studentSubmissions = submissions.filter(s =>
+        s.studentId === studentId &&
+        courseAssignments.some(a => a.id === s.assignmentId) &&
+        s.grade !== null
+    );
+
+    const studentQuizAttempts = quizAttempts.filter(qa =>
+        qa.studentId === studentId &&
+        courseQuizzes.some(q => q.id === qa.quizId)
+    );
+
+    const allGrades = [
+        ...studentSubmissions.map(s => s.grade!),
+        ...studentQuizAttempts.map(qa => qa.score)
+    ];
+
+    if (allGrades.length === 0) {
+        return null;
+    }
+
+    const total = allGrades.reduce((sum, grade) => sum + grade, 0);
+    return total / allGrades.length;
+  };
+
 
   const findCourseById = (id: string) => courses.find(c => c.id === id);
   const findAssignmentsByCourseId = (courseId: string) => assignments.filter(a => a.courseId === courseId);
@@ -568,7 +597,8 @@ const App: React.FC = () => {
     findQuizAttemptsByQuizId, findQuizAttemptByStudent, sendChatMessage, findChatMessagesByGroupId,
     markAttendance, findAttendanceByCourseForDate, findAttendanceByCourseAndStudent,
     createFee, payFee, findFeesByStudentId, findFeesByCourseId,
-    uploadVideoMaterial, deleteVideoMaterial, createVideoNote, findVideoMaterialsByCourseId, findVideoNotesByVideoIdAndStudentId
+    uploadVideoMaterial, deleteVideoMaterial, createVideoNote, findVideoMaterialsByCourseId, findVideoNotesByVideoIdAndStudentId,
+    calculateCourseGrade
   };
   
   if (isLoading) {
@@ -639,7 +669,7 @@ const Header: React.FC = () => {
                 <div className="flex items-center justify-between h-20">
                     <Link to="/" className="flex items-center space-x-4">
                         <SmartLearnLogo />
-                        <span className="text-xl font-bold text-white neon-text-primary">Smart Learn</span>
+                        <span className="text-xl font-bold text-copy neon-text-primary">Smart Learn</span>
                     </Link>
                     <div className="flex items-center space-x-2 sm:space-x-4">
                         <div className="relative" ref={notificationsRef}>
@@ -649,7 +679,7 @@ const Header: React.FC = () => {
                             </button>
                             <DropdownMenu isOpen={notificationsOpen} className="w-80 sm:w-96">
                                 <div className="p-4 flex justify-between items-center sticky top-0 bg-surface/80 backdrop-blur-sm border-b border-white/10">
-                                    <h4 className="font-semibold text-lg">Notifications</h4>
+                                    <h4 className="font-semibold text-lg text-copy">Notifications</h4>
                                     {unreadCount > 0 && <button onClick={markAllNotificationsAsRead} className="text-sm text-primary hover:underline">Mark all as read</button>}
                                 </div>
                                 <ul className="max-h-96 overflow-y-auto">
@@ -670,7 +700,7 @@ const Header: React.FC = () => {
                             <button onClick={() => setProfileOpen(o => !o)} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Toggle user menu">
                                 <UserCircleIcon className="h-8 w-8 text-copy-light"/>
                                 <div className="text-left hidden sm:block">
-                                   <p className="font-semibold leading-tight">{currentUser?.name}</p>
+                                   <p className="font-semibold leading-tight text-copy">{currentUser?.name}</p>
                                    <p className="text-sm text-copy-light leading-tight">{currentUser?.role}</p>
                                 </div>
                             </button>

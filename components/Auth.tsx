@@ -4,6 +4,14 @@ import { useAppContext } from '../App';
 import { SmartLearnLogo, GoogleIcon, UserPlusIcon, UserCircleIcon } from './Icons';
 import { Button, Input, Modal } from './ui';
 
+// A helper function for password validation
+const isPasswordValid = (password: string): boolean => {
+  // At least 8 characters, one uppercase, one lowercase, one number, one special character
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+  return passwordRegex.test(password);
+};
+
+
 const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register, users, loginWithUserObject } = useAppContext();
@@ -13,6 +21,7 @@ const Auth: React.FC = () => {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     role: 'Student' as UserRole,
   });
 
@@ -28,6 +37,14 @@ const Auth: React.FC = () => {
       const success = login(formData.email, formData.password);
       if (!success) setError('Invalid email or password.');
     } else {
+      if (!isPasswordValid(formData.password)) {
+        setError('Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
       const success = register(formData.name, formData.email, formData.password, formData.role);
       if (!success) setError('User with this email already exists.');
     }
@@ -66,10 +83,10 @@ const Auth: React.FC = () => {
             <button 
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center py-2.5 px-4 border border-white/20 rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background transition-colors duration-300"
+                className="w-full flex items-center justify-center py-2.5 px-4 border border-white/20 rounded-lg bg-white/10 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background transition-colors duration-300 shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.15)]"
             >
                 <GoogleIcon className="h-5 w-5 mr-3" />
-                <span className="text-sm font-medium text-gray-800">Continue with Google</span>
+                <span className="text-sm font-medium text-copy">Continue with Google</span>
             </button>
             
             <div className="relative my-6">
@@ -87,11 +104,25 @@ const Auth: React.FC = () => {
             <Input id="name" name="name" type="text" label="Full Name" value={formData.name} onChange={handleChange} required />
           )}
           <Input id="email" name="email" type="email" label="Email address" autoComplete="email" value={formData.email} onChange={handleChange} required />
-          <Input id="password" name="password" type="password" label="Password" autoComplete="current-password" value={formData.password} onChange={handleChange} required />
+          
+          {isLogin ? (
+            <Input id="password" name="password" type="password" label="Password" autoComplete="current-password" value={formData.password} onChange={handleChange} required />
+          ) : (
+            <>
+              <div>
+                  <Input id="password" name="password" type="password" label="Enter Password" autoComplete="new-password" value={formData.password} onChange={handleChange} required />
+                  <p className="text-xs text-copy-lighter mt-1.5 px-1">
+                      Must be 8+ characters and contain an uppercase, lowercase, number, and special character (e.g., !@#$%).
+                  </p>
+              </div>
+              <Input id="confirmPassword" name="confirmPassword" type="password" label="Confirm Password" autoComplete="new-password" value={formData.confirmPassword} onChange={handleChange} required />
+            </>
+          )}
+
           {!isLogin && (
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-copy-light">I am a...</label>
-              <select id="role" name="role" value={formData.role} onChange={handleChange} className="mt-1 block w-full bg-black/20 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm">
+              <select id="role" name="role" value={formData.role} onChange={handleChange} className="mt-1 block w-full bg-surface/50 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm">
                 <option>Student</option>
                 <option>Teacher</option>
               </select>
@@ -116,7 +147,7 @@ const Auth: React.FC = () => {
       <Modal isOpen={isGoogleModalOpen} onClose={() => setGoogleModalOpen(false)} title="">
         <div className="text-center mb-6">
             <GoogleIcon className="h-8 w-8 mx-auto" />
-            <h3 className="text-2xl font-semibold mt-4">Choose an account</h3>
+            <h3 className="text-2xl font-semibold mt-4 text-copy">Choose an account</h3>
             <p className="text-copy-light mt-1">to continue to Smart Learn</p>
         </div>
         <ul className="space-y-2 max-h-60 overflow-y-auto pr-2">
@@ -125,7 +156,7 @@ const Auth: React.FC = () => {
                     <button onClick={() => handleGoogleUserSelect(user)} className="w-full text-left p-3 flex items-center rounded-lg hover:bg-white/10 transition-colors duration-200">
                         <UserCircleIcon className="h-10 w-10 mr-4 text-copy-light" />
                         <div>
-                            <p className="font-semibold">{user.name}</p>
+                            <p className="font-semibold text-copy">{user.name}</p>
                             <p className="text-sm text-copy-light">{user.email}</p>
                         </div>
                     </button>
@@ -138,7 +169,7 @@ const Auth: React.FC = () => {
                     <UserPlusIcon />
                 </div>
                 <div>
-                    <p className="font-semibold">Use another account</p>
+                    <p className="font-semibold text-copy">Use another account</p>
                 </div>
             </button>
         </div>

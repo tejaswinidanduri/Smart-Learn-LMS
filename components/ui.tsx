@@ -1,4 +1,5 @@
 
+
 import React, { ReactNode } from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -9,9 +10,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = '', ...props }) => {
   const baseClasses = 'px-4 py-2 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95';
   const variantClasses = {
-    primary: 'bg-gradient-to-r from-primary via-accent to-secondary bg-[length:200%_auto] text-black font-bold focus:ring-primary hover:bg-[position:100%_0] hover:shadow-[0_0_20px_theme(colors.primary)]',
-    secondary: 'bg-white/10 hover:bg-white/20 focus:ring-white/50 text-copy',
-    danger: 'bg-danger/80 hover:bg-danger focus:ring-danger text-white hover:shadow-[0_0_15px_theme(colors.danger)]',
+    primary: 'bg-gradient-to-r from-primary to-secondary text-background font-bold focus:ring-primary hover:shadow-[0_0_20px_theme(colors.primary)] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.25)]',
+    secondary: 'bg-white/10 hover:bg-white/20 focus:ring-white/50 text-copy shadow-[inset_0_1px_2px_0_rgba(255,255,255,0.15)]',
+    danger: 'bg-danger/80 hover:bg-danger focus:ring-danger text-white hover:shadow-[0_0_15px_theme(colors.danger)] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.25)]',
   };
   return (
     <button className={`${baseClasses} ${variantClasses[variant]} ${className}`} {...props}>
@@ -28,7 +29,7 @@ export const Input: React.FC<InputProps> = ({ label, id, ...props }) => {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-copy-light">{label}</label>
-      <input id={id} className="mt-1 block w-full bg-black/20 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm placeholder-gray-500 focus:shadow-[0_0_10px_theme(colors.primary)]" {...props} />
+      <input id={id} className="mt-1 block w-full bg-surface/50 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm placeholder-gray-500 focus:shadow-[0_0_10px_theme(colors.primary)]" {...props} />
     </div>
   );
 };
@@ -41,7 +42,7 @@ export const TextArea: React.FC<TextAreaProps> = ({ label, id, ...props }) => {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-copy-light">{label}</label>
-      <textarea id={id} className="mt-1 block w-full bg-black/20 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm placeholder-gray-500 focus:shadow-[0_0_10px_theme(colors.primary)]" {...props} />
+      <textarea id={id} className="mt-1 block w-full bg-surface/50 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm placeholder-gray-500 focus:shadow-[0_0_10px_theme(colors.primary)]" {...props} />
     </div>
   );
 };

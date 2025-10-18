@@ -49,41 +49,51 @@ const NeuralNetworkBackground: React.FC = () => {
         }
         
         const themeColors = {
-            primary: 'rgba(0, 255, 255, 1)',
-            secondary: 'rgba(147, 51, 234, 1)',
-            accent: 'rgba(59, 130, 246, 1)',
+            primary: 'rgba(0, 255, 255, 1)', // Cyan
+            secondary: 'rgba(255, 0, 255, 1)', // Magenta
+            accent: 'rgba(207, 255, 4, 1)', // Lime
         };
         const colors = [themeColors.primary, themeColors.secondary, themeColors.accent];
         const maxDistance = 180;
-        const pullRadius = 250;
-        const pullStrength = 0.03;
+        const repelRadius = 250;
+        const repelStrength = 0.05;
 
         const animate = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             particles.forEach((p, i) => {
+                // Mouse repel effect
                 const dxMouse = p.x - mouse.x;
                 const dyMouse = p.y - mouse.y;
                 const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
-                if (distMouse < pullRadius) {
-                    p.vx -= (dxMouse / distMouse) * pullStrength;
-                    p.vy -= (dyMouse / distMouse) * pullStrength;
+                if (distMouse < repelRadius) {
+                    const forceDirectionX = dxMouse / distMouse;
+                    const forceDirectionY = dyMouse / distMouse;
+                    const force = (repelRadius - distMouse) / repelRadius;
+                    p.vx += forceDirectionX * force * repelStrength;
+                    p.vy += forceDirectionY * force * repelStrength;
                 }
 
+                // Apply velocity and friction
                 p.x += p.vx;
                 p.y += p.vy;
+                p.vx *= 0.98;
+                p.vy *= 0.98;
 
+                // Screen boundaries
                 if (p.x > canvas.width + 5) p.x = -5;
                 else if (p.x < -5) p.x = canvas.width + 5;
                 if (p.y > canvas.height + 5) p.y = -5;
                 else if (p.y < -5) p.y = canvas.height + 5;
 
+                // Draw particle (optional, can be very small/subtle)
                 ctx.beginPath();
                 const particleColor = colors[i % colors.length];
                 ctx.fillStyle = particleColor;
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 ctx.fill();
 
+                // Draw connections (threads)
                 for (let j = i + 1; j < particles.length; j++) {
                     const p2 = particles[j];
                     const dx = p.x - p2.x;
@@ -94,18 +104,19 @@ const NeuralNetworkBackground: React.FC = () => {
                         ctx.beginPath();
                         const opacity = 1 - distance / maxDistance;
                         const lineColor = colors[(i + j) % colors.length];
-                        ctx.strokeStyle = lineColor.replace('1)', `${opacity * 0.5})`);
-
-                        ctx.moveTo(p.x, p.y);
                         
-                        const midX = (p.x + p2.x) / 2;
-                        const midY = (p.y + p2.y) / 2;
-                        const cpx = (midX + p.x) / 2;
-                        const cpy = (midY + p.y) / 2;
-
-                        ctx.quadraticCurveTo(cpx, cpy, p2.x, p2.y);
-                        ctx.lineWidth = 0.75;
+                        // Glow effect
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = lineColor;
+                        
+                        ctx.strokeStyle = lineColor.replace('1)', `${opacity * 0.5})`);
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
                         ctx.stroke();
+                        
+                        // Reset shadow for next elements
+                        ctx.shadowBlur = 0;
                     }
                 }
             });
@@ -131,7 +142,7 @@ const NeuralNetworkBackground: React.FC = () => {
                 width: '100%',
                 height: '100%',
                 zIndex: -10,
-                backgroundColor: '#0a0c1c',
+                backgroundColor: '#000814',
             }}
         >
             <canvas
@@ -139,7 +150,7 @@ const NeuralNetworkBackground: React.FC = () => {
                 style={{
                     width: '100%',
                     height: '100%',
-                    opacity: 0.35,
+                    opacity: 0.5,
                 }}
             />
         </div>

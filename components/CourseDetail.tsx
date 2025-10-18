@@ -47,7 +47,7 @@ const CourseDetail: React.FC = () => {
         &larr; Back to Dashboard
       </button>
       <div className="mb-8 p-8 glassmorphism rounded-xl border-t-2 border-primary">
-        <h1 className="text-4xl font-extrabold text-white neon-text-primary">{course.title}</h1>
+        <h1 className="text-4xl font-extrabold text-copy neon-text-primary">{course.title}</h1>
         <p className="text-copy-light mt-2">Taught by {teacher?.name}</p>
         <p className="mt-4 text-lg text-copy/90">{course.description}</p>
       </div>
@@ -109,7 +109,7 @@ const AnnouncementsSection: React.FC<{ courseId: string; isTeacher: boolean; }> 
   return (
     <section>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Announcements</h2>
+        <h2 className="text-2xl font-semibold text-copy">Announcements</h2>
         {isTeacher && (
           <Button onClick={() => setIsModalOpen(true)}>
             <PlusCircleIcon />
@@ -128,7 +128,7 @@ const AnnouncementsSection: React.FC<{ courseId: string; isTeacher: boolean; }> 
                   <p className="text-sm text-copy-light mb-2">
                     Posted by {author?.name || 'Teacher'} on {new Date(announcement.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="whitespace-pre-wrap">{announcement.content}</p>
+                  <p className="whitespace-pre-wrap text-copy">{announcement.content}</p>
                 </div>
               </Card>
             )
@@ -171,7 +171,7 @@ const AssignmentSection: React.FC<{ courseId: string; isTeacher: boolean; }> = (
   return (
     <section>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Assignments</h2>
+        <h2 className="text-2xl font-semibold text-copy">Assignments</h2>
         {isTeacher && (
           <Button onClick={() => setIsModalOpen(true)}>
             <PlusCircleIcon />
@@ -204,7 +204,6 @@ const AssignmentSection: React.FC<{ courseId: string; isTeacher: boolean; }> = (
 };
 
 const AssignmentView: React.FC<{ assignment: Assignment; isTeacher: boolean }> = ({ assignment, isTeacher }) => {
-  // FIX: Destructure 'submissions' from useAppContext to resolve 'Cannot find name' error
   const { currentUser, findSubmissionsByStudentId, submitAssignment, findSubmissionsByAssignmentId, submissions } = useAppContext();
   const [content, setContent] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -213,9 +212,11 @@ const AssignmentView: React.FC<{ assignment: Assignment; isTeacher: boolean }> =
   const mySubmission = useMemo(() => {
     if (isTeacher || !currentUser) return null;
     return findSubmissionsByStudentId(currentUser.id, assignment.id)[0];
-  }, [currentUser, assignment.id, findSubmissionsByStudentId, isTeacher, submissions]); // Re-check on submissions change
+  }, [currentUser, assignment.id, findSubmissionsByStudentId, isTeacher, submissions]);
   
   const allSubmissions = isTeacher ? findSubmissionsByAssignmentId(assignment.id) : [];
+
+  const isPastDue = new Date() > new Date(`${assignment.dueDate}T23:59:59`);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -227,6 +228,10 @@ const AssignmentView: React.FC<{ assignment: Assignment; isTeacher: boolean }> =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPastDue) {
+        alert("The due date for this assignment has passed.");
+        return;
+    }
     if (!currentUser || (!content.trim() && !file)) {
         alert("Please provide a text submission or upload a file.");
         return;
@@ -242,7 +247,6 @@ const AssignmentView: React.FC<{ assignment: Assignment; isTeacher: boolean }> =
         };
 
         if (file) {
-            // Revoke old URL if it exists to avoid memory leaks
             if (mySubmission?.fileUrl) {
                 URL.revokeObjectURL(mySubmission.fileUrl);
             }
@@ -277,21 +281,21 @@ const AssignmentView: React.FC<{ assignment: Assignment; isTeacher: boolean }> =
   return (
     <Card>
       <div className="p-6">
-        <h3 className="text-xl font-bold">{assignment.title}</h3>
+        <h3 className="text-xl font-bold text-copy">{assignment.title}</h3>
         <p className="text-sm text-copy-light mb-2">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
-        <p>{assignment.description}</p>
+        <p className="text-copy">{assignment.description}</p>
       </div>
       {!isTeacher && currentUser && (
-        <div className="p-6 bg-black/20 border-t border-white/10">
+        <div className="p-6 bg-surface/60 border-t border-white/10">
           {mySubmission && (
             <div className="mb-6 pb-6 border-b border-white/20">
-              <h4 className="font-semibold text-lg">Your Current Submission</h4>
-              {mySubmission.content && <p className="mt-2 p-3 bg-background rounded-md whitespace-pre-wrap border border-white/10">{mySubmission.content}</p>}
+              <h4 className="font-semibold text-lg text-copy">Your Current Submission</h4>
+              {mySubmission.content && <p className="mt-2 p-3 bg-background rounded-md whitespace-pre-wrap border border-white/10 text-copy">{mySubmission.content}</p>}
               {mySubmission.fileName && (
                 <div className="mt-2 p-3 bg-background rounded-md border border-white/10 flex items-center justify-between">
                     <div className="flex items-center">
                         <PaperClipIcon />
-                        <span className="ml-3 font-medium">{mySubmission.fileName}</span>
+                        <span className="ml-3 font-medium text-copy">{mySubmission.fileName}</span>
                     </div>
                     <Button variant="secondary" onClick={() => downloadFile(mySubmission)} aria-label={`Download ${mySubmission.fileName}`}><DownloadIcon /></Button>
                 </div>
@@ -299,29 +303,43 @@ const AssignmentView: React.FC<{ assignment: Assignment; isTeacher: boolean }> =
               {mySubmission.grade !== null ? (
                 <div className="mt-4 p-3 border-l-4 border-success bg-success/10 rounded-r-md">
                     <p className="font-bold text-success">Grade: {mySubmission.grade}%</p>
-                    <p className="font-semibold mt-2">Feedback:</p>
+                    <p className="font-semibold mt-2 text-copy">Feedback:</p>
                     <p className="text-copy-light">{mySubmission.feedback}</p>
                 </div>
               ) : (
-                <p className="mt-4 text-yellow-400">Awaiting grade.</p>
+                <p className="mt-4 text-secondary">Awaiting grade.</p>
               )}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <h4 className="font-semibold text-lg">{mySubmission ? 'Update Your Submission' : 'Submit Your Assignment'}</h4>
-            <TextArea label="Text Submission (Optional)" value={content} onChange={(e) => setContent(e.target.value)} rows={5} />
-            <Input label="Upload File (Optional)" type="file" id={`file-input-${assignment.id}`} onChange={handleFileChange} />
-            {file && <p className="text-sm text-copy-light">Selected file: {file.name}</p>}
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : mySubmission ? 'Resubmit Assignment' : 'Submit Assignment'}
-            </Button>
-          </form>
+          {isPastDue ? (
+             <div className="mt-4 p-4 bg-danger/10 border-l-4 border-danger rounded-r-md flex items-start">
+                <ClockIcon className="h-6 w-6 text-danger mr-3 flex-shrink-0" />
+                <div>
+                    <p className="font-semibold text-danger">Submissions Closed</p>
+                    <p className="text-copy-light mt-1">
+                        {mySubmission 
+                            ? "The due date has passed, and you can no longer update your submission."
+                            : "The due date for this assignment has passed. Submissions are no longer accepted."}
+                    </p>
+                </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <h4 className="font-semibold text-lg text-copy">{mySubmission ? 'Update Your Submission' : 'Submit Your Assignment'}</h4>
+              <TextArea label="Text Submission (Optional)" value={content} onChange={(e) => setContent(e.target.value)} rows={5} />
+              <Input label="Upload File (Optional)" type="file" id={`file-input-${assignment.id}`} onChange={handleFileChange} />
+              {file && <p className="text-sm text-copy-light">Selected file: {file.name}</p>}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : mySubmission ? 'Resubmit Assignment' : 'Submit Assignment'}
+              </Button>
+            </form>
+          )}
         </div>
       )}
       {isTeacher && (
-        <div className="p-6 bg-black/20 border-t border-white/10">
-           <h4 className="font-semibold text-lg mb-2">Submissions ({allSubmissions.length})</h4>
+        <div className="p-6 bg-surface/60 border-t border-white/10">
+           <h4 className="font-semibold text-lg mb-2 text-copy">Submissions ({allSubmissions.length})</h4>
            {allSubmissions.length > 0 ? (
                <div className="space-y-4">
                    {allSubmissions.map(sub => <SubmissionGrading key={sub.id} submission={sub} assignmentTitle={assignment.title}/>)}
@@ -371,14 +389,14 @@ const SubmissionGrading: React.FC<{ submission: Submission; assignmentTitle: str
 
     return (
         <div className="p-4 bg-background rounded-lg border border-white/10">
-            <p className="font-bold">{student?.name || 'Unknown Student'}</p>
+            <p className="font-bold text-copy">{student?.name || 'Unknown Student'}</p>
             <p className="text-sm text-copy-light">Submitted on: {new Date(submission.submittedAt).toLocaleString()}</p>
-            {submission.content && <p className="mt-2 p-3 bg-black/20 rounded-md whitespace-pre-wrap border border-white/10">{submission.content}</p>}
+            {submission.content && <p className="mt-2 p-3 bg-surface/60 rounded-md whitespace-pre-wrap border border-white/10 text-copy">{submission.content}</p>}
             {submission.fileName && (
-                <div className="mt-2 p-3 bg-black/20 rounded-md border border-white/10 flex items-center justify-between">
+                <div className="mt-2 p-3 bg-surface/60 rounded-md border border-white/10 flex items-center justify-between">
                     <div className="flex items-center">
                         <PaperClipIcon />
-                        <span className="ml-3 font-medium">{submission.fileName}</span>
+                        <span className="ml-3 font-medium text-copy">{submission.fileName}</span>
                     </div>
                     <Button variant="secondary" onClick={() => downloadFile(submission)} aria-label={`Download ${submission.fileName}`}><DownloadIcon /></Button>
                 </div>
@@ -400,7 +418,7 @@ const SubmissionGrading: React.FC<{ submission: Submission; assignmentTitle: str
 }
 
 // QUIZZES SECTION
-const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ courseId, isTeacher }) => {
+const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean; }> = ({ courseId, isTeacher }) => {
   const { currentUser, findQuizzesByCourseId, createQuiz, submitQuiz, findQuizAttemptByStudent, findQuizAttemptsByQuizId, findUserById } = useAppContext();
   const quizzes = findQuizzesByCourseId(courseId);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -409,7 +427,6 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   
   const [quizTitle, setQuizTitle] = useState('');
-  const [dueDate, setDueDate] = useState('');
   const [questions, setQuestions] = useState<Omit<Question, 'id'>[]>([]);
   
   const [materialForAI, setMaterialForAI] = useState('');
@@ -417,7 +434,6 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
 
   const resetCreateForm = () => {
     setQuizTitle('');
-    setDueDate('');
     setQuestions([]);
     setMaterialForAI('');
   };
@@ -463,12 +479,12 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
   };
   
   const handleCreateQuiz = () => {
-    if (!quizTitle || questions.length === 0 || !dueDate) {
+    if (!quizTitle || questions.length === 0) {
         alert("Please fill in all fields.");
         return;
     }
     const finalQuestions: Question[] = questions.map(q => ({ ...q, id: `q-${Date.now()}-${Math.random()}`}));
-    createQuiz({ courseId, title: quizTitle, dueDate, questions: finalQuestions });
+    createQuiz({ courseId, title: quizTitle, questions: finalQuestions });
     setCreateModalOpen(false);
     resetCreateForm();
   };
@@ -511,8 +527,8 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
             <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1">
               {quiz.questions.map((q, qIndex) => (
                 <div key={q.id}>
-                  <p className="font-semibold">{qIndex + 1}. {q.text}</p>
-                  <div className="mt-2 space-y-1 pl-4">
+                  <p className="font-semibold text-copy">{qIndex + 1}. {q.text}</p>
+                  <div className="mt-2 space-y-1 pl-4 text-copy">
                     {q.type === 'multiple-choice' && q.options?.map((opt, oIndex) => (
                         <label key={oIndex} className="flex items-center">
                           <input type="radio" name={q.id} value={opt} onChange={e => setAnswers({...answers, [q.id]: e.target.value})} className="mr-2 accent-primary"/> {opt}
@@ -542,8 +558,8 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
         <Modal isOpen={true} onClose={onClose} title={`Results for ${quiz.title}`}>
             <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
                 {attempts.length > 0 ? (
-                    <table className="w-full text-left">
-                        <thead className="bg-black/20"><tr><th className="p-2 font-semibold">Student</th><th className="p-2 font-semibold">Score</th></tr></thead>
+                    <table className="w-full text-left text-copy">
+                        <thead className="bg-surface/60"><tr><th className="p-2 font-semibold">Student</th><th className="p-2 font-semibold">Score</th></tr></thead>
                         <tbody>
                         {attempts.map(attempt => {
                             const student = findUserById(attempt.studentId);
@@ -565,7 +581,7 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
   return (
     <section>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Quizzes</h2>
+        <h2 className="text-2xl font-semibold text-copy">Quizzes</h2>
         {isTeacher && <Button onClick={() => setCreateModalOpen(true)}><PlusCircleIcon /><span className="ml-2">New Quiz</span></Button>}
       </div>
       <div className="space-y-4">
@@ -575,8 +591,7 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
             return (
               <Card key={quiz.id} className="p-6 flex justify-between items-center">
                 <div>
-                  <h3 className="text-xl font-bold">{quiz.title}</h3>
-                  <p className="text-sm text-copy-light">Due: {new Date(quiz.dueDate).toLocaleDateString()}</p>
+                  <h3 className="text-xl font-bold text-copy">{quiz.title}</h3>
                 </div>
                 <div>
                   {isTeacher && <Button onClick={() => handleViewResults(quiz)}>View Results</Button>}
@@ -596,10 +611,9 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
         <Modal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} title="Create New Quiz">
           <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
             <Input label="Quiz Title" value={quizTitle} onChange={e => setQuizTitle(e.target.value)} />
-            <Input label="Due Date" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
             
-            <div className="p-4 border border-white/10 rounded-md bg-black/20 space-y-2">
-                <h4 className="font-semibold text-md">✨ AI Question Generator</h4>
+            <div className="p-4 border border-white/10 rounded-md bg-surface/60 space-y-2">
+                <h4 className="font-semibold text-md text-copy">✨ AI Question Generator</h4>
                 <TextArea 
                     label="Paste course material here"
                     value={materialForAI}
@@ -613,17 +627,17 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
             </div>
             
             <hr className="border-white/10"/>
-            <h3 className="font-semibold text-lg">Questions ({questions.length})</h3>
+            <h3 className="font-semibold text-lg text-copy">Questions ({questions.length})</h3>
             {questions.map((q, qIndex) => (
-              <div key={qIndex} className="p-4 border border-white/10 rounded-md space-y-2 relative">
+              <div key={qIndex} className="p-4 border border-white/10 rounded-md space-y-2 relative bg-surface/30">
                 <Button variant="danger" className="absolute top-2 right-2 p-1 h-auto" onClick={() => handleRemoveQuestion(qIndex)}>&times;</Button>
                 <TextArea label={`Question ${qIndex + 1}`} value={q.text} onChange={e => handleQuestionChange(qIndex, 'text', e.target.value)} rows={2} />
-                <select value={q.type} onChange={e => handleQuestionChange(qIndex, 'type', e.target.value)} className="w-full p-2 border border-white/20 bg-black/20 rounded-md">
+                <select value={q.type} onChange={e => handleQuestionChange(qIndex, 'type', e.target.value)} className="w-full p-2 border border-white/20 bg-surface/50 rounded-md text-copy">
                     <option value="multiple-choice">Multiple Choice</option>
                     <option value="true-false">True/False</option>
                 </select>
                 {q.type === 'multiple-choice' && (
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-copy">
                         {q.options?.map((opt, oIndex) => (
                            <div key={oIndex} className="flex items-center gap-2">
                              <input type="radio" className="accent-primary" name={`correct-ans-${qIndex}`} checked={q.correctAnswer === opt} onChange={() => handleQuestionChange(qIndex, 'correctAnswer', opt)}/>
@@ -633,7 +647,7 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean }> = ({ co
                     </div>
                 )}
                 {q.type === 'true-false' && (
-                  <div className="space-y-1">
+                  <div className="space-y-1 text-copy">
                     <label className="flex items-center gap-2"><input type="radio" className="accent-primary" name={`correct-ans-${qIndex}`} checked={q.correctAnswer === "True"} onChange={() => handleQuestionChange(qIndex, 'correctAnswer', "True")}/> True</label>
                     <label className="flex items-center gap-2"><input type="radio" className="accent-primary" name={`correct-ans-${qIndex}`} checked={q.correctAnswer === "False"} onChange={() => handleQuestionChange(qIndex, 'correctAnswer', "False")}/> False</label>
                   </div>
@@ -695,7 +709,7 @@ const VideoSection: React.FC<{ courseId: string; isTeacher: boolean; }> = ({ cou
     return (
         <section>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold">Videos</h2>
+                <h2 className="text-2xl font-semibold text-copy">Videos</h2>
                 {isTeacher && (
                     <Button onClick={() => setUploadModalOpen(true)}>
                         <PlusCircleIcon />
@@ -714,7 +728,7 @@ const VideoSection: React.FC<{ courseId: string; isTeacher: boolean; }> = ({ cou
                                 <Button onClick={() => handlePlayVideo(video)}>Watch Video</Button>
                             </div>
                             <div className="p-4">
-                                <h3 className="font-semibold truncate">{video.fileName}</h3>
+                                <h3 className="font-semibold truncate text-copy">{video.fileName}</h3>
                                 <p className="text-sm text-copy-light">Uploaded: {new Date(video.uploadedAt).toLocaleDateString()}</p>
                                 {isTeacher && (
                                      <Button variant="danger" className="w-full mt-2" onClick={() => deleteVideoMaterial(video.id)}>
@@ -823,21 +837,21 @@ const TeacherAttendanceView: React.FC<{ courseId: string }> = ({ courseId }) => 
 
     const StatusButton: React.FC<{current: string, value: string, onClick: () => void, children: React.ReactNode, color: string, activeColor: string}> = ({ current, value, onClick, children, color, activeColor}) => {
       const isActive = current === value;
-      return <button onClick={onClick} className={`px-3 py-1 text-sm rounded-md border border-white/20 ${isActive ? `${color} ${activeColor}` : 'bg-black/10 hover:bg-black/30'}`}>{children}</button>
+      return <button onClick={onClick} className={`px-3 py-1 text-sm rounded-md border border-white/20 ${isActive ? `${color} ${activeColor}` : 'bg-surface/60 hover:bg-surface'}`}>{children}</button>
     }
 
     return (
         <section>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold">Mark Attendance for {new Date(today).toLocaleDateString()}</h2>
+                <h2 className="text-2xl font-semibold text-copy">Mark Attendance for {new Date(today).toLocaleDateString()}</h2>
                 <Button onClick={handleSave} disabled={isSaved}>
                     {isSaved ? 'Attendance Saved' : 'Save Attendance'}
                 </Button>
             </div>
             <Card>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[600px]">
-                        <thead className="bg-black/20">
+                    <table className="w-full text-left min-w-[600px] text-copy">
+                        <thead className="bg-surface/60">
                             <tr>
                                 <th className="p-4 font-semibold">Student Name</th>
                                 <th className="p-4 font-semibold">Overall Attendance</th>
@@ -889,36 +903,36 @@ const StudentAttendanceView: React.FC<{ courseId: string }> = ({ courseId }) => 
 
     return (
         <section>
-            <h2 className="text-2xl font-semibold mb-4">My Attendance</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-copy">My Attendance</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <Card className="p-4 flex flex-col items-center justify-center">
                     <ChartPieIcon />
                     <h3 className="text-lg font-semibold text-copy-light mt-2">Attendance %</h3>
-                    <p className="text-3xl font-bold mt-1">{stats.percentage}</p>
+                    <p className="text-3xl font-bold mt-1 text-copy">{stats.percentage}</p>
                 </Card>
                  <Card className="p-4 flex flex-col items-center justify-center">
                     <CheckCircleIcon />
                     <h3 className="text-lg font-semibold text-copy-light mt-2">Present</h3>
-                    <p className="text-3xl font-bold mt-1">{stats.present}</p>
+                    <p className="text-3xl font-bold mt-1 text-copy">{stats.present}</p>
                 </Card>
                  <Card className="p-4 flex flex-col items-center justify-center">
                     <ClockIcon />
                     <h3 className="text-lg font-semibold text-copy-light mt-2">Late</h3>
-                    <p className="text-3xl font-bold mt-1">{stats.late}</p>
+                    <p className="text-3xl font-bold mt-1 text-copy">{stats.late}</p>
                 </Card>
                  <Card className="p-4 flex flex-col items-center justify-center">
                     <XCircleIcon />
                     <h3 className="text-lg font-semibold text-copy-light mt-2">Absent</h3>
-                    <p className="text-3xl font-bold mt-1">{stats.absent}</p>
+                    <p className="text-3xl font-bold mt-1 text-copy">{stats.absent}</p>
                 </Card>
             </div>
              <Card>
-                <div className="p-4 border-b border-white/10"><h3 className="font-semibold text-lg">Attendance Log</h3></div>
+                <div className="p-4 border-b border-white/10"><h3 className="font-semibold text-lg text-copy">Attendance Log</h3></div>
                 {myRecords.length > 0 ? (
                     <ul className="divide-y divide-white/10">
                         {myRecords.map(record => (
                             <li key={record.id} className="p-4 flex justify-between items-center">
-                                <span className="font-medium">{new Date(record.date).toLocaleDateString()}</span>
+                                <span className="font-medium text-copy">{new Date(record.date).toLocaleDateString()}</span>
                                 {getStatusChip(record.status)}
                             </li>
                         ))}
@@ -970,7 +984,7 @@ const CourseMaterials: React.FC<{ courseId: string, isTeacher: boolean }> = ({ c
     return (
         <section>
              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold">Course Materials</h2>
+                <h2 className="text-2xl font-semibold text-copy">Course Materials</h2>
                 {isTeacher && (
                 <Button onClick={() => setIsModalOpen(true)}>
                     <PlusCircleIcon />
@@ -982,8 +996,8 @@ const CourseMaterials: React.FC<{ courseId: string, isTeacher: boolean }> = ({ c
                 <Card className="p-4 sm:p-6">
                     <ul className="space-y-3">
                         {materials.map(m => (
-                            <li key={m.id} className="flex justify-between items-center p-3 bg-black/20 rounded-md border border-white/10">
-                                <div className="flex items-center">
+                            <li key={m.id} className="flex justify-between items-center p-3 bg-surface/60 rounded-md border border-white/10">
+                                <div className="flex items-center text-copy">
                                     <PaperClipIcon />
                                     <span className="ml-3 font-medium">{m.fileName}</span>
                                 </div>
@@ -1052,12 +1066,12 @@ const DiscussionForum: React.FC<{ courseId: string }> = ({ courseId }) => {
         }
         
         return (
-            <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+            <div className="p-4 bg-surface/60 rounded-lg border border-white/10">
                 <div className="flex items-center mb-2">
-                    <p className="font-bold">{author?.name || 'Unknown User'}</p>
+                    <p className="font-bold text-copy">{author?.name || 'Unknown User'}</p>
                     <p className="text-xs text-copy-light ml-2">{new Date(post.createdAt).toLocaleString()}</p>
                 </div>
-                <p className="whitespace-pre-wrap">{post.content}</p>
+                <p className="whitespace-pre-wrap text-copy">{post.content}</p>
                 <div className="mt-2">
                     <button onClick={() => setIsReplying(r => !r)} className="text-sm text-primary hover:underline">
                         {isReplying ? 'Cancel' : 'Reply'}
@@ -1080,7 +1094,7 @@ const DiscussionForum: React.FC<{ courseId: string }> = ({ courseId }) => {
     
     return (
         <section>
-            <h2 className="text-2xl font-semibold mb-4">Discussion Forum</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-copy">Discussion Forum</h2>
             <Card className="p-4 sm:p-6 mb-6">
                 <form onSubmit={handlePostSubmit} className="space-y-2">
                     <TextArea label="Start a new discussion" value={newPostContent} onChange={e => setNewPostContent(e.target.value)} rows={3} required />
@@ -1130,7 +1144,7 @@ const StudyGroupsSection: React.FC<{ courseId: string; isTeacher: boolean; }> = 
     return (
         <section>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold">Study Groups</h2>
+                <h2 className="text-2xl font-semibold text-copy">Study Groups</h2>
                 {!isTeacher && !userGroup && (
                     <Button onClick={() => setIsModalOpen(true)}>
                         <PlusCircleIcon />
@@ -1144,7 +1158,7 @@ const StudyGroupsSection: React.FC<{ courseId: string; isTeacher: boolean; }> = 
                        <Card key={group.id} className="p-6">
                            <div className="flex justify-between items-start">
                                <div>
-                                   <h3 className="text-xl font-bold">{group.name}</h3>
+                                   <h3 className="text-xl font-bold text-copy">{group.name}</h3>
                                    <p className="text-copy-light mt-2">{group.description}</p>
                                </div>
                                {!isTeacher && (
@@ -1153,7 +1167,7 @@ const StudyGroupsSection: React.FC<{ courseId: string; isTeacher: boolean; }> = 
                                    : !userGroup && <Button onClick={() => handleJoinGroup(group.id)}>Join Group</Button>
                                )}
                            </div>
-                           <div className="mt-4 pt-4 border-t border-white/10">
+                           <div className="mt-4 pt-4 border-t border-white/10 text-copy">
                                <h4 className="font-semibold flex items-center"><UsersIcon /><span className="ml-2">Members ({group.memberIds.length})</span></h4>
                                <ul className="mt-2 list-disc list-inside text-copy-light">
                                    {group.memberIds.map(id => {
@@ -1205,15 +1219,15 @@ const GroupChat: React.FC<{ groupId: string }> = ({ groupId }) => {
 
     return (
         <div className="mt-4 pt-4 border-t border-white/10">
-            <h4 className="font-semibold mb-2">Group Chat</h4>
-            <div className="bg-black/20 border border-white/10 rounded-lg p-4 h-64 overflow-y-auto" ref={chatContainerRef}>
+            <h4 className="font-semibold mb-2 text-copy">Group Chat</h4>
+            <div className="bg-surface/60 border border-white/10 rounded-lg p-4 h-64 overflow-y-auto" ref={chatContainerRef}>
                 {messages.length > 0 ? (
                     messages.map(msg => {
                         const author = findUserById(msg.authorId);
                         const isCurrentUser = author?.id === currentUser?.id;
                         return (
                            <div key={msg.id} className={`flex flex-col mb-2 ${isCurrentUser ? 'items-end': 'items-start'}`}>
-                               <div className={`rounded-lg px-3 py-2 max-w-xs lg:max-w-md ${isCurrentUser ? 'bg-primary text-black' : 'bg-surface'}`}>
+                               <div className={`rounded-lg px-3 py-2 max-w-xs lg:max-w-md text-copy ${isCurrentUser ? 'bg-primary text-black' : 'bg-surface'}`}>
                                    {!isCurrentUser && <p className="text-xs font-bold text-secondary">{author?.name}</p>}
                                    <p>{msg.content}</p>
                                </div>
@@ -1226,7 +1240,7 @@ const GroupChat: React.FC<{ groupId: string }> = ({ groupId }) => {
                 )}
             </div>
             <form onSubmit={handleSendMessage} className="mt-2 flex gap-2">
-                <Input label="" placeholder="Type a message..." value={messageContent} onChange={e => setMessageContent(e.target.value)} className="flex-grow" />
+                <Input label="" placeholder="Type a message..." value={messageContent} onChange={e => setMessageContent(e.target.value)} className="flex-grow !text-background" />
                 <Button type="submit" aria-label="Send Message"><SendIcon /></Button>
             </form>
         </div>
@@ -1272,7 +1286,7 @@ const FeesManagementSection: React.FC<{ courseId: string }> = ({ courseId }) => 
     return (
         <section>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold">Fee Status</h2>
+                <h2 className="text-2xl font-semibold text-copy">Fee Status</h2>
                 <Button onClick={() => setIsModalOpen(true)}>
                     <PlusCircleIcon />
                     <span className="ml-2">Assign Fee</span>
@@ -1280,8 +1294,8 @@ const FeesManagementSection: React.FC<{ courseId: string }> = ({ courseId }) => 
             </div>
             <Card>
                  <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[600px]">
-                        <thead className="bg-black/20">
+                    <table className="w-full text-left min-w-[600px] text-copy">
+                        <thead className="bg-surface/60">
                             <tr>
                                 <th className="p-4 font-semibold">Student Name</th>
                                 <th className="p-4 font-semibold">Email</th>
@@ -1386,7 +1400,7 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
     if (students.length === 0) {
         return (
             <section>
-                <h2 className="text-2xl font-semibold mb-4">Reports</h2>
+                <h2 className="text-2xl font-semibold mb-4 text-copy">Reports</h2>
                 <p className="text-copy-light">No students are enrolled in this course yet. Reporting data will be available once students enroll.</p>
             </section>
         );
@@ -1395,7 +1409,7 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
     return (
         <section>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Reports Dashboard</h2>
+                <h2 className="text-2xl font-semibold text-copy">Reports Dashboard</h2>
                  <Button onClick={handleExport} variant="secondary">
                     <DownloadIcon />
                     <span className="ml-2">Export Student Data</span>
@@ -1403,15 +1417,15 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Enrolled Students</h3><p className="text-4xl font-bold mt-2">{students.length}</p></Card>
-                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Assignments</h3><p className="text-4xl font-bold mt-2">{assignments.length}</p></Card>
-                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Overall Average Grade</h3><p className="text-4xl font-bold mt-2">{reportData.overallAverageGrade.toFixed(1)}%</p></Card>
+                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Enrolled Students</h3><p className="text-4xl font-bold mt-2 text-copy">{students.length}</p></Card>
+                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Assignments</h3><p className="text-4xl font-bold mt-2 text-copy">{assignments.length}</p></Card>
+                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Overall Average Grade</h3><p className="text-4xl font-bold mt-2 text-copy">{reportData.overallAverageGrade.toFixed(1)}%</p></Card>
             </div>
 
             <Card className="mb-8">
-                 <div className="p-6 border-b border-white/10"><h3 className="text-xl font-semibold">Assignment Performance</h3></div>
+                 <div className="p-6 border-b border-white/10"><h3 className="text-xl font-semibold text-copy">Assignment Performance</h3></div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[600px]"><thead className="bg-black/20"><tr><th className="p-4 font-semibold">Assignment</th><th className="p-4 font-semibold">Submission Rate</th><th className="p-4 font-semibold">Average Grade</th></tr></thead>
+                    <table className="w-full text-left min-w-[600px] text-copy"><thead className="bg-surface/60"><tr><th className="p-4 font-semibold">Assignment</th><th className="p-4 font-semibold">Submission Rate</th><th className="p-4 font-semibold">Average Grade</th></tr></thead>
                         <tbody>
                             {reportData.assignmentStats.map(stat => (
                                 <tr key={stat.id} className="border-b border-white/10 last:border-b-0"><td className="p-4">{stat.title}</td><td className="p-4">{stat.submissionCount}/{students.length} ({stat.submissionRate.toFixed(0)}%)</td><td className="p-4">{stat.averageGrade > 0 ? `${stat.averageGrade.toFixed(1)}%` : 'N/A'}</td></tr>
@@ -1422,9 +1436,9 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
             </Card>
 
             <Card>
-                <div className="p-6 border-b border-white/10"><h3 className="text-xl font-semibold">Student Performance</h3></div>
+                <div className="p-6 border-b border-white/10"><h3 className="text-xl font-semibold text-copy">Student Performance</h3></div>
                 <div className="overflow-x-auto">
-                     <table className="w-full text-left min-w-[600px]"><thead className="bg-black/20"><tr><th className="p-4 font-semibold">Student Name</th><th className="p-4 font-semibold">Assignments Submitted</th><th className="p-4 font-semibold">Average Grade</th></tr></thead>
+                     <table className="w-full text-left min-w-[600px] text-copy"><thead className="bg-surface/60"><tr><th className="p-4 font-semibold">Student Name</th><th className="p-4 font-semibold">Assignments Submitted</th><th className="p-4 font-semibold">Average Grade</th></tr></thead>
                         <tbody>
                             {reportData.studentStats.map(stat => (
                                 <tr key={stat.id} className="border-b border-white/10 last:border-b-0"><td className="p-4">{stat.name}</td><td className="p-4">{stat.submittedCount}/{assignments.length}</td><td className="p-4">{stat.averageGrade > 0 ? `${stat.averageGrade.toFixed(1)}%` : 'N/A'}</td></tr>
@@ -1445,7 +1459,7 @@ const EnrolledStudents: React.FC<{ courseId: string }> = ({ courseId }) => {
 
     return (
         <section className="mt-12">
-            <h2 className="text-2xl font-semibold mb-4">Enrolled Students ({students?.length || 0})</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-copy">Enrolled Students ({students?.length || 0})</h2>
             {students && students.length > 0 ? (
                 <Card className="p-6">
                     <ul className="space-y-2">

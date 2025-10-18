@@ -127,7 +127,6 @@ export interface Quiz {
   id: string;
   courseId: string;
   title: string;
-  dueDate: string; // ISO string format
   questions: Question[];
 }
 
