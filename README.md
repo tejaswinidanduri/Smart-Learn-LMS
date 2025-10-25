@@ -1,20 +1,36 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🌟 Smart-Learn LMS
 
-# Run and deploy your AI Studio app
+An **AI-powered Learning Management System (LMS)** built with **React, TypeScript, Tailwind CSS, and Google Gemini API** — designed to make learning smarter, faster, and more interactive.
 
-This contains everything you need to run your app locally.
+🌐 **Live Demo:** [Smart-Learn-LMS](https://smart-learn-lms-nine.vercel.app/#/)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1L3Zr52wIZ0I90sdiVTDzNE0lN-hmeQVW
+---
 
-## Run Locally
+## 🧠 Team Name:
+**Cloud Storms**
 
-**Prerequisites:**  Node.js
+## 👩‍💻 Team Members:
+- Tejaswini Danduri  
+- Chashmitha V  
+- Tejaswini V  
+- Pranathi  
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 💻 Tech Stack:
+- ⚛️ **React + TypeScript** – For building a scalable frontend  
+- 🎨 **Tailwind CSS** – For fast and responsive UI design  
+- 💾 **LocalStorage** – For user data persistence  
+
+---
+
+## 🚀 Features:  
+✅ **Course Content Generation** – generate course summaries and materials  
+✅ **Smart Quizzes** – quizzes based on course content  
+✅ **Video Learning** – Summaries and Q&A from lecture videos  
+✅ **Persistent User Data** – Data saved using browser LocalStorage  
+✅ **Modern UI/UX** – Animated gradients and glassmorphism design  
+✅ **Fully Responsive Design** – Works seamlessly on mobile, tablet, and desktop  
+
+---
+
