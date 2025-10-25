@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../App';
-import type { Announcement, Assignment, Submission, DiscussionPost, CourseMaterial, Group, Quiz, Question, QuestionType, QuizAttempt, ChatMessage, AttendanceRecord, Fee, VideoMaterial } from '../types';
+import type { Announcement, Assignment, Submission, DiscussionPost, CourseMaterial, Group, Quiz, Question, QuestionType, QuizAttempt, ChatMessage, AttendanceRecord, Fee, VideoMaterial, CourseReview } from '../types';
 import { Button, Card, Input, TextArea, Modal, Spinner } from './ui';
-import { PlusCircleIcon, PaperClipIcon, DownloadIcon, TrashIcon, ChatBubbleIcon, UsersIcon, BookOpenIcon, ChartBarIcon, ClipboardCheckIcon, SendIcon, ClipboardListIcon, ChartPieIcon, CheckCircleIcon, ClockIcon, XCircleIcon, MegaphoneIcon, CreditCardIcon, VideoCameraIcon } from './Icons';
-import { generateAssignmentFeedback, generateQuizQuestions } from '../services/geminiService';
+import { PlusCircleIcon, PaperClipIcon, DownloadIcon, TrashIcon, ChatBubbleIcon, UsersIcon, BookOpenIcon, ChartBarIcon, ClipboardCheckIcon, SendIcon, ClipboardListIcon, ChartPieIcon, CheckCircleIcon, ClockIcon, XCircleIcon, MegaphoneIcon, CreditCardIcon, VideoCameraIcon, StarIcon } from './Icons';
 import VideoPlayerView from './VideoPlayerView';
 
 const CourseDetail: React.FC = () => {
@@ -47,44 +46,65 @@ const CourseDetail: React.FC = () => {
         &larr; Back to Dashboard
       </button>
       <div className="mb-8 p-8 glassmorphism rounded-xl border-t-2 border-primary">
-        <h1 className="text-4xl font-extrabold text-copy neon-text-primary">{course.title}</h1>
-        <p className="text-copy-light mt-2">Taught by {teacher?.name}</p>
+        <div className="flex justify-between items-start">
+            <div>
+                <h1 className="text-4xl font-extrabold text-copy neon-text-primary">{course.title}</h1>
+                <p className="text-copy-light mt-2">Taught by {teacher?.name}</p>
+            </div>
+            {course.fee && course.fee > 0 && !isEnrolled && !isTeacher && (
+                <div className="text-right flex-shrink-0 ml-4">
+                    <p className="text-copy-light text-lg">Course Fee</p>
+                    <p className="text-4xl font-bold text-accent">${course.fee}</p>
+                </div>
+            )}
+        </div>
         <p className="mt-4 text-lg text-copy/90">{course.description}</p>
       </div>
         
-      {canViewContent ? (
-        <>
+      
           <div className="border-b border-white/10 mb-6">
             <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto">
-              <TabButton tabName="Announcements" icon={<MegaphoneIcon />} />
-              <TabButton tabName="Assignments" icon={<BookOpenIcon className="h-5 w-5" />} />
-              <TabButton tabName="Quizzes" icon={<ClipboardCheckIcon />} />
-              <TabButton tabName="Videos" icon={<VideoCameraIcon />} />
-              <TabButton tabName="Attendance" icon={<ClipboardListIcon />} />
-              <TabButton tabName="Materials" icon={<PaperClipIcon />} />
-              <TabButton tabName="Discussion" icon={<ChatBubbleIcon />} />
-              {!isTeacher && <TabButton tabName="Study Groups" icon={<UsersIcon />} />}
-              {isTeacher && <TabButton tabName="Fees" icon={<CreditCardIcon />} />}
-              {isTeacher && <TabButton tabName="Reports" icon={<ChartBarIcon />} />}
+              {canViewContent ? (
+                  <>
+                    <TabButton tabName="Announcements" icon={<MegaphoneIcon />} />
+                    <TabButton tabName="Assignments" icon={<BookOpenIcon className="h-5 w-5" />} />
+                    <TabButton tabName="Quizzes" icon={<ClipboardCheckIcon />} />
+                    <TabButton tabName="Videos" icon={<VideoCameraIcon />} />
+                    <TabButton tabName="Attendance" icon={<ClipboardListIcon />} />
+                    <TabButton tabName="Materials" icon={<PaperClipIcon />} />
+                    <TabButton tabName="Discussion" icon={<ChatBubbleIcon />} />
+                    <TabButton tabName="Reviews" icon={<StarIcon filled={false} className="h-5 w-5" />} />
+                    {!isTeacher && <TabButton tabName="Study Groups" icon={<UsersIcon />} />}
+                    {isTeacher && <TabButton tabName="Fees" icon={<CreditCardIcon />} />}
+                    {isTeacher && <TabButton tabName="Reports" icon={<ChartBarIcon />} />}
+                  </>
+              ) : (
+                  <TabButton tabName="Reviews" icon={<StarIcon filled={false} className="h-5 w-5" />} />
+              )}
             </nav>
           </div>
 
           <div>
-            {activeTab === 'Announcements' && <AnnouncementsSection courseId={course.id} isTeacher={isTeacher} />}
-            {activeTab === 'Assignments' && <AssignmentSection courseId={course.id} isTeacher={isTeacher} />}
-            {activeTab === 'Quizzes' && <QuizzesSection courseId={course.id} isTeacher={isTeacher} />}
-            {activeTab === 'Videos' && <VideoSection courseId={course.id} isTeacher={isTeacher} />}
-            {activeTab === 'Attendance' && <AttendanceSection courseId={course.id} isTeacher={isTeacher} />}
-            {activeTab === 'Materials' && <CourseMaterials courseId={course.id} isTeacher={isTeacher} />}
-            {activeTab === 'Discussion' && <DiscussionForum courseId={course.id} />}
-            {activeTab === 'Study Groups' && !isTeacher && <StudyGroupsSection courseId={course.id} isTeacher={isTeacher} />}
-            {activeTab === 'Fees' && isTeacher && <FeesManagementSection courseId={course.id} />}
-            {activeTab === 'Reports' && isTeacher && <ReportsSection courseId={course.id} />}
+             {activeTab === 'Reviews' && <ReviewsSection courseId={course.id} />}
+            {canViewContent ? (
+                <>
+                    {activeTab === 'Announcements' && <AnnouncementsSection courseId={course.id} isTeacher={isTeacher} />}
+                    {activeTab === 'Assignments' && <AssignmentSection courseId={course.id} isTeacher={isTeacher} />}
+                    {activeTab === 'Quizzes' && <QuizzesSection courseId={course.id} isTeacher={isTeacher} />}
+                    {activeTab === 'Videos' && <VideoSection courseId={course.id} isTeacher={isTeacher} />}
+                    {activeTab === 'Attendance' && <AttendanceSection courseId={course.id} isTeacher={isTeacher} />}
+                    {activeTab === 'Materials' && <CourseMaterials courseId={course.id} isTeacher={isTeacher} />}
+                    {activeTab === 'Discussion' && <DiscussionForum courseId={course.id} />}
+                    {activeTab === 'Study Groups' && !isTeacher && <StudyGroupsSection courseId={course.id} isTeacher={isTeacher} />}
+                    {activeTab === 'Fees' && isTeacher && <FeesManagementSection courseId={course.id} />}
+                    {activeTab === 'Reports' && isTeacher && <ReportsSection courseId={course.id} />}
+                </>
+            ) : (
+                activeTab !== 'Reviews' && <p className="text-center text-xl">You must be enrolled to view course materials.</p>
+            )}
+            
           </div>
-        </>
-      ) : (
-        <p className="text-center text-xl">You must be enrolled to view course materials.</p>
-      )}
+        
 
       {isTeacher && <EnrolledStudents courseId={course.id} />}
     </div>
@@ -159,14 +179,44 @@ const AssignmentSection: React.FC<{ courseId: string; isTeacher: boolean; }> = (
   const { createAssignment, findAssignmentsByCourseId } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ title: '', description: '', dueDate: '' });
+  const [file, setFile] = useState<File | null>(null);
   const assignments = findAssignmentsByCourseId(courseId);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+    } else {
+      setFile(null);
+    }
+  };
+
+  const resetForm = () => {
+    setNewAssignment({ title: '', description: '', dueDate: '' });
+    setFile(null);
+  };
 
   const handleCreateAssignment = (e: React.FormEvent) => {
     e.preventDefault();
-    createAssignment({ courseId, ...newAssignment });
+    
+    let assignmentPayload: Omit<Assignment, 'id'> = {
+        courseId,
+        ...newAssignment
+    };
+
+    if (file) {
+        assignmentPayload = {
+            ...assignmentPayload,
+            fileUrl: URL.createObjectURL(file),
+            fileName: file.name,
+            fileType: file.type,
+        };
+    }
+
+    createAssignment(assignmentPayload);
     setIsModalOpen(false);
-    setNewAssignment({ title: '', description: '', dueDate: '' });
+    resetForm();
   };
+
 
   return (
     <section>
@@ -187,13 +237,15 @@ const AssignmentSection: React.FC<{ courseId: string; isTeacher: boolean; }> = (
         )}
       </div>
       {isTeacher && (
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Assignment">
+        <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); resetForm(); }} title="Create New Assignment">
           <form onSubmit={handleCreateAssignment} className="space-y-4">
             <Input label="Title" name="title" value={newAssignment.title} onChange={(e) => setNewAssignment({...newAssignment, title: e.target.value})} required />
             <TextArea label="Description" name="description" value={newAssignment.description} onChange={(e) => setNewAssignment({...newAssignment, description: e.target.value})} required />
             <Input label="Due Date" name="dueDate" type="date" value={newAssignment.dueDate} onChange={(e) => setNewAssignment({...newAssignment, dueDate: e.target.value})} required />
+            <Input label="Attach File (Optional)" type="file" onChange={handleFileChange} />
+            {file && <p className="text-sm text-copy-light">Selected file: {file.name}</p>}
             <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button type="button" variant="secondary" onClick={() => { setIsModalOpen(false); resetForm(); }}>Cancel</Button>
                 <Button type="submit">Create</Button>
             </div>
           </form>
@@ -284,6 +336,17 @@ const AssignmentView: React.FC<{ assignment: Assignment; isTeacher: boolean }> =
         <h3 className="text-xl font-bold text-copy">{assignment.title}</h3>
         <p className="text-sm text-copy-light mb-2">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
         <p className="text-copy">{assignment.description}</p>
+        {assignment.fileName && (
+            <div className="mt-4">
+                <div className="p-3 bg-surface/60 rounded-md border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center">
+                        <PaperClipIcon />
+                        <span className="ml-3 font-medium text-copy">{assignment.fileName}</span>
+                    </div>
+                    <Button variant="secondary" onClick={() => downloadFile(assignment)} aria-label={`Download ${assignment.fileName}`}><DownloadIcon /></Button>
+                </div>
+            </div>
+        )}
       </div>
       {!isTeacher && currentUser && (
         <div className="p-6 bg-surface/60 border-t border-white/10">
@@ -358,25 +421,11 @@ const SubmissionGrading: React.FC<{ submission: Submission; assignmentTitle: str
     const student = findUserById(submission.studentId);
     const [grade, setGrade] = useState(submission.grade?.toString() || '');
     const [feedback, setFeedback] = useState(submission.feedback || '');
-    const [isGenerating, setIsGenerating] = useState(false);
 
     const handleGradeSubmit = () => {
         gradeSubmission(submission.id, parseInt(grade, 10), feedback);
     };
     
-    const handleGenerateFeedback = async () => {
-        setIsGenerating(true);
-        try {
-            const generatedFeedback = await generateAssignmentFeedback(assignmentTitle, submission.content || 'No text submitted.');
-            setFeedback(generatedFeedback);
-        } catch (error) {
-            console.error(error);
-            alert("Failed to generate feedback.");
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
     const downloadFile = (fileData: { fileUrl?: string; fileName?: string; }) => {
         if (!fileData.fileUrl || !fileData.fileName) return;
         const a = document.createElement('a');
@@ -404,9 +453,6 @@ const SubmissionGrading: React.FC<{ submission: Submission; assignmentTitle: str
             <div className="mt-4 flex gap-4 items-end">
                 <div className="flex-grow">
                     <TextArea label="Feedback" value={feedback} onChange={e => setFeedback(e.target.value)} rows={3} />
-                    <Button type="button" variant="secondary" className="text-sm mt-2" onClick={handleGenerateFeedback} disabled={isGenerating}>
-                      {isGenerating ? <Spinner/> : '✨ Generate Feedback with AI'}
-                    </Button>
                 </div>
                 <div className="w-24">
                    <Input label="Grade (%)" type="number" value={grade} onChange={e => setGrade(e.target.value)} />
@@ -428,32 +474,10 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean; }> = ({ c
   
   const [quizTitle, setQuizTitle] = useState('');
   const [questions, setQuestions] = useState<Omit<Question, 'id'>[]>([]);
-  
-  const [materialForAI, setMaterialForAI] = useState('');
-  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   const resetCreateForm = () => {
     setQuizTitle('');
     setQuestions([]);
-    setMaterialForAI('');
-  };
-  
-  const handleGenerateQuestions = async () => {
-    if (!materialForAI.trim()) {
-        alert("Please paste some course material to generate questions from.");
-        return;
-    }
-    setIsGeneratingQuestions(true);
-    try {
-        const newQuestions = await generateQuizQuestions(materialForAI);
-        setQuestions(prev => [...prev, ...newQuestions]);
-        setMaterialForAI(''); // Clear textarea after generation
-    } catch (error) {
-        console.error(error);
-        alert("Failed to generate quiz questions. Please check the console for details.");
-    } finally {
-        setIsGeneratingQuestions(false);
-    }
   };
 
   const handleAddQuestion = () => {
@@ -612,20 +636,6 @@ const QuizzesSection: React.FC<{ courseId: string; isTeacher: boolean; }> = ({ c
           <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
             <Input label="Quiz Title" value={quizTitle} onChange={e => setQuizTitle(e.target.value)} />
             
-            <div className="p-4 border border-white/10 rounded-md bg-surface/60 space-y-2">
-                <h4 className="font-semibold text-md text-copy">✨ AI Question Generator</h4>
-                <TextArea 
-                    label="Paste course material here"
-                    value={materialForAI}
-                    onChange={e => setMaterialForAI(e.target.value)}
-                    rows={5}
-                    placeholder="Paste text from your course materials, and the AI will generate questions based on it."
-                />
-                <Button type="button" variant="secondary" onClick={handleGenerateQuestions} disabled={isGeneratingQuestions}>
-                    {isGeneratingQuestions ? <Spinner /> : 'Generate Questions'}
-                </Button>
-            </div>
-            
             <hr className="border-white/10"/>
             <h3 className="font-semibold text-lg text-copy">Questions ({questions.length})</h3>
             {questions.map((q, qIndex) => (
@@ -748,7 +758,6 @@ const VideoSection: React.FC<{ courseId: string; isTeacher: boolean; }> = ({ cou
                     <div className="space-y-4">
                         <Input label="Select Video File" type="file" accept="video/*" onChange={handleFileChange} />
                         {file && <p className="text-sm text-copy-light">Selected: {file.name}</p>}
-                        <p className="text-xs text-copy-light">Note: AI transcript generation will begin after upload.</p>
                         <div className="flex justify-end gap-2 pt-4">
                             <Button type="button" variant="secondary" onClick={() => setUploadModalOpen(false)}>Cancel</Button>
                             <Button onClick={handleUpload} disabled={!file || isUploading}>
@@ -1240,7 +1249,7 @@ const GroupChat: React.FC<{ groupId: string }> = ({ groupId }) => {
                 )}
             </div>
             <form onSubmit={handleSendMessage} className="mt-2 flex gap-2">
-                <Input label="" placeholder="Type a message..." value={messageContent} onChange={e => setMessageContent(e.target.value)} className="flex-grow !text-background" />
+                <Input label="" placeholder="Type a message..." value={messageContent} onChange={e => setMessageContent(e.target.value)} className="flex-grow !bg-primary !text-black placeholder:text-black/60" />
                 <Button type="submit" aria-label="Send Message"><SendIcon /></Button>
             </form>
         </div>
@@ -1250,9 +1259,7 @@ const GroupChat: React.FC<{ groupId: string }> = ({ groupId }) => {
 
 // FEES MANAGEMENT SECTION (TEACHER)
 const FeesManagementSection: React.FC<{ courseId: string }> = ({ courseId }) => {
-    const { findCourseById, findUserById, findFeesByCourseId, createFee } = useAppContext();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [feeData, setFeeData] = useState({ description: '', amount: '', dueDate: '' });
+    const { findCourseById, findUserById, findFeesByCourseId } = useAppContext();
 
     const course = findCourseById(courseId);
     const students = useMemo(() =>
@@ -1262,35 +1269,30 @@ const FeesManagementSection: React.FC<{ courseId: string }> = ({ courseId }) => 
     const courseFees = findFeesByCourseId(courseId);
 
     const getStudentFeeStatus = (studentId: string) => {
-        // This logic is simple; assumes one fee per course for now for display
-        const studentFee = courseFees.find(f => f.studentId === studentId);
-        if (!studentFee) return <span className="text-copy-lighter">Not Assigned</span>;
-        if (studentFee.status === 'Paid') return <span className="px-2 py-1 text-xs font-medium rounded-full bg-success/20 text-success">Paid</span>;
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-danger/20 text-danger">Unpaid</span>;
-    };
-    
-    const handleAssignFee = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!course?.studentIds) return;
-        createFee({
-            courseId,
-            studentIds: course.studentIds,
-            description: feeData.description || `${course.title} Fee`,
-            amount: parseFloat(feeData.amount),
-            dueDate: feeData.dueDate,
-        });
-        setIsModalOpen(false);
-        setFeeData({ description: '', amount: '', dueDate: '' });
+        const studentFeesForCourse = courseFees.filter(f => f.studentId === studentId);
+
+        if (studentFeesForCourse.length === 0) {
+            // Student is enrolled but has no fees. This implies it's a free course.
+            return <span className="text-copy-lighter">Free Course</span>;
+        }
+
+        const paidCount = studentFeesForCourse.filter(f => f.status === 'Paid').length;
+        const totalCount = studentFeesForCourse.length;
+
+        if (paidCount === totalCount) {
+            return <span className="px-2 py-1 text-xs font-medium rounded-full bg-success/20 text-success">All Paid</span>;
+        }
+        
+        // At least one installment exists and not all are paid.
+        return <span className={`px-2 py-1 text-xs font-medium rounded-full ${paidCount > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-danger/20 text-danger'}`}>
+            {paidCount} of {totalCount} Paid
+        </span>;
     };
 
     return (
         <section>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-copy">Fee Status</h2>
-                <Button onClick={() => setIsModalOpen(true)}>
-                    <PlusCircleIcon />
-                    <span className="ml-2">Assign Fee</span>
-                </Button>
             </div>
             <Card>
                  <div className="overflow-x-auto">
@@ -1314,18 +1316,6 @@ const FeesManagementSection: React.FC<{ courseId: string }> = ({ courseId }) => 
                     </table>
                 </div>
             </Card>
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Assign Fee to All Students">
-                <form onSubmit={handleAssignFee} className="space-y-4">
-                    <p className="text-copy-light">This will assign a new fee to all {students.length} students enrolled in this course.</p>
-                    <Input label="Fee Description" value={feeData.description} onChange={e => setFeeData({...feeData, description: e.target.value})} placeholder={`${course?.title} Tuition Fee`} required />
-                    <Input label="Amount ($)" type="number" value={feeData.amount} onChange={e => setFeeData({...feeData, amount: e.target.value})} required />
-                    <Input label="Due Date" type="date" value={feeData.dueDate} onChange={e => setFeeData({...feeData, dueDate: e.target.value})} required />
-                    <div className="flex justify-end gap-2 pt-4">
-                        <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                        <Button type="submit">Assign Fee</Button>
-                    </div>
-                </form>
-            </Modal>
         </section>
     );
 }
@@ -1380,7 +1370,8 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
         
         const escapeCsvCell = (cell: any) => `"${String(cell).replace(/"/g, '""')}"`;
         const rows = reportData.studentStats.map(s => 
-            [escapeCsvCell(s.name), s.submittedCount, s.averageGrade.toFixed(2)].join(',')
+            // FIX: Use Number() to ensure toFixed can be called, as type inference may fail.
+            [escapeCsvCell(s.name), s.submittedCount, (s.averageGrade as number).toFixed(2)].join(',')
         );
         
         const csvContent = [headers.join(','), ...rows].join('\n');
@@ -1419,16 +1410,29 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Enrolled Students</h3><p className="text-4xl font-bold mt-2 text-copy">{students.length}</p></Card>
                 <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Assignments</h3><p className="text-4xl font-bold mt-2 text-copy">{assignments.length}</p></Card>
-                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Overall Average Grade</h3><p className="text-4xl font-bold mt-2 text-copy">{reportData.overallAverageGrade.toFixed(1)}%</p></Card>
+                <Card className="p-6 text-center"><h3 className="text-lg font-semibold text-copy-light">Overall Average Grade</h3><p className="text-4xl font-bold mt-2 text-copy">{Number(reportData.overallAverageGrade).toFixed(1)}%</p></Card>
             </div>
 
             <Card className="mb-8">
                  <div className="p-6 border-b border-white/10"><h3 className="text-xl font-semibold text-copy">Assignment Performance</h3></div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-[600px] text-copy"><thead className="bg-surface/60"><tr><th className="p-4 font-semibold">Assignment</th><th className="p-4 font-semibold">Submission Rate</th><th className="p-4 font-semibold">Average Grade</th></tr></thead>
+                    <table className="w-full text-left min-w-[600px] text-copy">
+                        <thead className="bg-surface/60">
+                            <tr>
+                                <th className="p-4 font-semibold">Assignment Title</th>
+                                <th className="p-4 font-semibold">Submission Rate</th>
+                                <th className="p-4 font-semibold">Submissions</th>
+                                <th className="p-4 font-semibold">Average Grade</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {reportData.assignmentStats.map(stat => (
-                                <tr key={stat.id} className="border-b border-white/10 last:border-b-0"><td className="p-4">{stat.title}</td><td className="p-4">{stat.submissionCount}/{students.length} ({stat.submissionRate.toFixed(0)}%)</td><td className="p-4">{stat.averageGrade > 0 ? `${stat.averageGrade.toFixed(1)}%` : 'N/A'}</td></tr>
+                                <tr key={stat.id} className="border-b border-white/10 last:border-b-0">
+                                    <td className="p-4 font-medium">{stat.title}</td>
+                                    <td className="p-4">{stat.submissionRate.toFixed(1)}%</td>
+                                    <td className="p-4">{stat.submissionCount} / {students.length}</td>
+                                    <td className="p-4">{stat.averageGrade > 0 ? `${Number(stat.averageGrade).toFixed(1)}%` : 'N/A'}</td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
@@ -1438,10 +1442,21 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
             <Card>
                 <div className="p-6 border-b border-white/10"><h3 className="text-xl font-semibold text-copy">Student Performance</h3></div>
                 <div className="overflow-x-auto">
-                     <table className="w-full text-left min-w-[600px] text-copy"><thead className="bg-surface/60"><tr><th className="p-4 font-semibold">Student Name</th><th className="p-4 font-semibold">Assignments Submitted</th><th className="p-4 font-semibold">Average Grade</th></tr></thead>
+                     <table className="w-full text-left min-w-[600px] text-copy">
+                        <thead className="bg-surface/60">
+                            <tr>
+                                <th className="p-4 font-semibold">Student Name</th>
+                                <th className="p-4 font-semibold">Submitted</th>
+                                <th className="p-4 font-semibold">Average Grade</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {reportData.studentStats.map(stat => (
-                                <tr key={stat.id} className="border-b border-white/10 last:border-b-0"><td className="p-4">{stat.name}</td><td className="p-4">{stat.submittedCount}/{assignments.length}</td><td className="p-4">{stat.averageGrade > 0 ? `${stat.averageGrade.toFixed(1)}%` : 'N/A'}</td></tr>
+                                <tr key={stat.id} className="border-b border-white/10 last:border-b-0">
+                                    <td className="p-4 font-medium">{stat.name}</td>
+                                    <td className="p-4">{stat.submittedCount} / {assignments.length}</td>
+                                    <td className="p-4">{stat.averageGrade > 0 ? `${Number(stat.averageGrade).toFixed(1)}%` : 'N/A'}</td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
@@ -1451,26 +1466,189 @@ const ReportsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
     );
 };
 
+
 // ENROLLED STUDENTS (TEACHER VIEW)
 const EnrolledStudents: React.FC<{ courseId: string }> = ({ courseId }) => {
     const { findCourseById, findUserById } = useAppContext();
     const course = findCourseById(courseId);
-    const students = course?.studentIds?.map(id => findUserById(id)).filter(Boolean) as any[];
+    
+    if (!course || !course.studentIds || course.studentIds.length === 0) {
+        return null;
+    }
+
+    const students = course.studentIds.map(id => findUserById(id)).filter(Boolean);
 
     return (
         <section className="mt-12">
-            <h2 className="text-2xl font-semibold mb-4 text-copy">Enrolled Students ({students?.length || 0})</h2>
-            {students && students.length > 0 ? (
-                <Card className="p-6">
-                    <ul className="space-y-2">
-                        {students.map(student => (
-                            <li key={student.id} className="text-copy-light">{student.name} ({student.email})</li>
-                        ))}
-                    </ul>
-                </Card>
-            ) : (
-                <p className="text-copy-light">No students have enrolled yet.</p>
-            )}
+            <h2 className="text-2xl font-semibold mb-4 text-copy">Enrolled Students ({students.length})</h2>
+            <Card>
+                 <ul className="divide-y divide-white/10">
+                    {students.map(student => (
+                        <li key={student!.id} className="p-4 flex items-center">
+                            <UsersIcon className="h-6 w-6 mr-4 text-copy-light"/>
+                            <div>
+                                <p className="font-semibold text-copy">{student!.name}</p>
+                                <p className="text-sm text-copy-light">{student!.email}</p>
+                            </div>
+                        </li>
+                    ))}
+                 </ul>
+            </Card>
+        </section>
+    );
+};
+
+const StarRatingDisplay: React.FC<{ rating: number, className?: string }> = ({ rating, className }) => {
+    return (
+        <div className={`flex items-center ${className}`}>
+            {[...Array(5)].map((_, i) => (
+                <StarIcon key={i} filled={i < rating} className={`h-5 w-5 ${i < rating ? 'text-yellow-400' : 'text-gray-500'}`} />
+            ))}
+        </div>
+    );
+};
+
+// REVIEWS SECTION
+const ReviewsSection: React.FC<{ courseId: string }> = ({ courseId }) => {
+    const { 
+        currentUser,
+        findCourseById,
+        findReviewsByCourseId,
+        createCourseReview,
+        findUserById,
+        calculateAverageRating 
+    } = useAppContext();
+    
+    const course = findCourseById(courseId);
+    const reviews = findReviewsByCourseId(courseId);
+    const { average, count } = calculateAverageRating(courseId);
+    
+    const isStudent = currentUser?.role === 'Student';
+    const isEnrolled = course?.studentIds?.includes(currentUser?.id || '');
+    
+    const isCourseCompleted = useMemo(() => {
+        if (!course) return false;
+        const endDate = new Date(course.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        return new Date() > endDate;
+    }, [course]);
+    const canReview = isStudent && isEnrolled && isCourseCompleted;
+
+    const myReview = reviews.find(r => r.studentId === currentUser?.id);
+    
+    const [rating, setRating] = useState(myReview?.rating || 0);
+    const [comment, setComment] = useState(myReview?.comment || '');
+
+    const handleReviewSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (rating === 0) {
+            alert("Please select a rating.");
+            return;
+        }
+        createCourseReview({ courseId, rating, comment });
+        alert("Your review has been submitted!");
+    };
+    
+    const ratingDistribution = useMemo(() => {
+        const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        if (count === 0) return distribution;
+        reviews.forEach(review => {
+            distribution[review.rating]++;
+        });
+        // Convert to percentage
+        for (const key in distribution) {
+            distribution[key] = (distribution[key] / count) * 100;
+        }
+        return distribution;
+    }, [reviews, count]);
+    
+    const StarRatingInput: React.FC<{ rating: number; setRating: (rating: number) => void }> = ({ rating, setRating }) => {
+        const [hoverRating, setHoverRating] = useState(0);
+        return (
+            <div className="flex items-center">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="focus:outline-none"
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                    >
+                        <StarIcon 
+                            filled={(hoverRating || rating) >= star} 
+                            className={`h-8 w-8 cursor-pointer transition-colors ${
+                                (hoverRating || rating) >= star ? 'text-yellow-400' : 'text-gray-500 hover:text-yellow-400/50'
+                            }`} 
+                        />
+                    </button>
+                ))}
+            </div>
+        );
+    };
+
+    return (
+        <section>
+            <h2 className="text-2xl font-semibold mb-4 text-copy">Student Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                    <Card className="p-6 text-center">
+                        <p className="text-6xl font-bold text-copy">{average.toFixed(1)}</p>
+                        <StarRatingDisplay rating={average} className="justify-center my-2" />
+                        <p className="text-copy-light">Based on {count} {count === 1 ? 'review' : 'reviews'}</p>
+                    </Card>
+                    <Card className="p-6 mt-6">
+                         <div className="space-y-2 text-sm text-copy-light">
+                            {Object.entries(ratingDistribution).reverse().map(([star, percentage]) => (
+                                <div key={star} className="flex items-center gap-2">
+                                    <span className="w-12">{star} star</span>
+                                    <div className="w-full bg-surface rounded-full h-2.5">
+                                        <div className="bg-yellow-400 h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                                    </div>
+                                    <span className="w-10 text-right">{percentage.toFixed(0)}%</span>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+
+                <div className="lg:col-span-2 space-y-6">
+                     {canReview && (
+                        <Card className="p-6">
+                            <h3 className="text-xl font-semibold text-copy mb-4">{myReview ? 'Edit Your Review' : 'Add Your Review'}</h3>
+                            <form onSubmit={handleReviewSubmit} className="space-y-4">
+                                <StarRatingInput rating={rating} setRating={setRating} />
+                                <TextArea label="Your Comment" value={comment} onChange={e => setComment(e.target.value)} rows={4} placeholder="Tell us about your experience with this course..."/>
+                                <div className="flex justify-end">
+                                    <Button type="submit">Submit Review</Button>
+                                </div>
+                            </form>
+                        </Card>
+                    )}
+                    {reviews.length > 0 ? (
+                        reviews.map(review => {
+                            const student = findUserById(review.studentId);
+                            return (
+                                <Card key={review.id} className="p-6">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-bold text-lg text-copy">{student?.name || 'Anonymous'}</p>
+                                            <p className="text-xs text-copy-light">{new Date(review.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                        <StarRatingDisplay rating={review.rating} />
+                                    </div>
+                                    <p className="mt-4 text-copy-light whitespace-pre-wrap">{review.comment}</p>
+                                </Card>
+                            )
+                        })
+                    ) : (
+                        <Card className="p-12 text-center text-copy-light">
+                           No reviews yet. Be the first to leave one!
+                        </Card>
+                    )}
+                </div>
+            </div>
         </section>
     );
 };

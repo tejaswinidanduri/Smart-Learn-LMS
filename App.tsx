@@ -1,8 +1,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
-import type { User, Course, Assignment, Submission, UserRole, DiscussionPost, CourseMaterial, Notification, Group, Quiz, Question, QuizAttempt, ChatMessage, AttendanceRecord, Announcement, Fee, PaymentMethod, VideoMaterial, VideoNote } from './types';
+import type { User, Course, Assignment, Submission, UserRole, DiscussionPost, CourseMaterial, Notification, Group, Quiz, Question, QuizAttempt, ChatMessage, AttendanceRecord, Announcement, Fee, PaymentMethod, VideoMaterial, VideoNote, CourseReview } from './types';
 import { SmartLearnLogo, LogoutIcon, BellIcon, UserCircleIcon } from './components/Icons';
-import { generateVideoTranscript } from './services/geminiService';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
 import CourseDetail from './components/CourseDetail';
@@ -44,6 +43,7 @@ interface AppContextType {
   attendanceRecords: AttendanceRecord[];
   announcements: Announcement[];
   fees: Fee[];
+  reviews: CourseReview[];
   login: (email: string, password: string) => boolean;
   loginWithUserObject: (user: User) => void;
   logout: () => void;
@@ -72,6 +72,7 @@ interface AppContextType {
   uploadVideoMaterial: (courseId: string, file: File) => Promise<void>;
   deleteVideoMaterial: (videoId: string) => void;
   createVideoNote: (note: Omit<VideoNote, 'id' | 'createdAt' | 'studentId'>) => void;
+  createCourseReview: (review: Omit<CourseReview, 'id' | 'createdAt' | 'studentId'>) => void;
   findCourseById: (id: string) => Course | undefined;
   findAssignmentsByCourseId: (courseId: string) => Assignment[];
   findSubmissionsByAssignmentId: (assignmentId: string) => Submission[];
@@ -92,7 +93,10 @@ interface AppContextType {
   findFeesByCourseId: (courseId: string) => Fee[];
   findVideoMaterialsByCourseId: (courseId: string) => VideoMaterial[];
   findVideoNotesByVideoIdAndStudentId: (videoId: string, studentId: string) => VideoNote[];
+  findReviewsByCourseId: (courseId: string) => CourseReview[];
   calculateCourseGrade: (courseId: string, studentId: string) => number | null;
+  calculateAverageRating: (courseId: string) => { average: number; count: number };
+  areAllFeesPaidForCourse: (courseId: string, studentId: string) => boolean;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -120,6 +124,7 @@ const App: React.FC = () => {
   const [chatMessages, setChatMessages] = usePersistentState<ChatMessage[]>('chatMessages', []);
   const [attendanceRecords, setAttendanceRecords] = usePersistentState<AttendanceRecord[]>('attendanceRecords', []);
   const [fees, setFees] = usePersistentState<Fee[]>('fees', []);
+  const [reviews, setReviews] = usePersistentState<CourseReview[]>('reviews', []);
   const [currentUser, setCurrentUser] = usePersistentState<User | null>('currentUser', null);
   const navigate = useNavigate();
 
@@ -204,12 +209,69 @@ const App: React.FC = () => {
     if (!currentUser || currentUser.role !== 'Student') return;
     const course = courses.find(c => c.id === courseId);
     if (course && !course.studentIds?.includes(currentUser.id)) {
-        const updatedCourses = courses.map(c => 
-            c.id === courseId 
+        // Update course enrollment
+        const updatedCourses = courses.map(c =>
+            c.id === courseId
             ? { ...c, studentIds: [...(c.studentIds || []), currentUser.id] }
             : c
         );
         setCourses(updatedCourses);
+
+        // Generate fee installments if applicable
+        if (course.fee && course.fee > 0) {
+            const NUMBER_OF_INSTALLMENTS = 3;
+            const totalFee = course.fee;
+            
+            // Use cents to avoid floating point issues, then convert back
+            const totalCents = Math.round(totalFee * 100);
+            const installmentCents = Math.floor(totalCents / NUMBER_OF_INSTALLMENTS);
+            
+            const newInstallments: Fee[] = [];
+
+            const startDate = new Date(course.startDate);
+            const endDate = new Date(course.endDate);
+            const midDate = new Date(startDate.getTime() + (endDate.getTime() - startDate.getTime()) / 2);
+
+            const dueDates = [
+                startDate.toISOString().split('T')[0],
+                midDate.toISOString().split('T')[0],
+                endDate.toISOString().split('T')[0],
+            ];
+            
+            let centsSum = 0;
+            for (let i = 0; i < NUMBER_OF_INSTALLMENTS - 1; i++) {
+                centsSum += installmentCents;
+                newInstallments.push({
+                    id: `fee-${Date.now()}-${currentUser.id}-${i}`,
+                    studentId: currentUser.id,
+                    courseId: course.id,
+                    description: `${course.title} - Installment ${i + 1} of ${NUMBER_OF_INSTALLMENTS}`,
+                    amount: installmentCents / 100,
+                    dueDate: dueDates[i],
+                    status: 'Unpaid',
+                });
+            }
+
+            // Last installment gets the remainder
+            const lastInstallmentCents = totalCents - centsSum;
+            newInstallments.push({
+                id: `fee-${Date.now()}-${currentUser.id}-${NUMBER_OF_INSTALLMENTS - 1}`,
+                studentId: currentUser.id,
+                courseId: course.id,
+                description: `${course.title} - Installment ${NUMBER_OF_INSTALLMENTS} of ${NUMBER_OF_INSTALLMENTS}`,
+                amount: lastInstallmentCents / 100,
+                dueDate: dueDates[NUMBER_OF_INSTALLMENTS - 1],
+                status: 'Unpaid',
+            });
+
+            setFees(prev => [...prev, ...newInstallments]);
+            
+            createNotification({
+                userId: currentUser.id,
+                message: `Enrolled in "${course.title}". A 3-part installment plan has been set up.`,
+                link: `/profile`
+            });
+        }
     }
   };
   
@@ -487,7 +549,6 @@ const App: React.FC = () => {
     if (!currentUser || currentUser.role !== 'Teacher') return;
     
     const fileUrl = URL.createObjectURL(file);
-    const transcript = await generateVideoTranscript(file.name);
 
     const newVideoMaterial: VideoMaterial = {
         id: `video-${Date.now()}`,
@@ -495,7 +556,6 @@ const App: React.FC = () => {
         fileName: file.name,
         fileType: file.type,
         fileUrl,
-        transcript,
         uploadedAt: new Date().toISOString()
     };
     
@@ -533,6 +593,33 @@ const App: React.FC = () => {
     };
     setVideoNotes(prev => [...prev, newNote]);
   };
+  
+  const createCourseReview = (review: Omit<CourseReview, 'id' | 'createdAt' | 'studentId'>) => {
+    if (!currentUser || currentUser.role !== 'Student') return;
+    
+    setReviews(prev => {
+        const existingReviewIndex = prev.findIndex(r => r.courseId === review.courseId && r.studentId === currentUser.id);
+
+        if (existingReviewIndex > -1) {
+            const updatedReviews = [...prev];
+            updatedReviews[existingReviewIndex] = {
+                ...prev[existingReviewIndex],
+                rating: review.rating,
+                comment: review.comment,
+                createdAt: new Date().toISOString(),
+            };
+            return updatedReviews;
+        } else {
+            const newReview: CourseReview = {
+                ...review,
+                id: `review-${Date.now()}`,
+                studentId: currentUser.id,
+                createdAt: new Date().toISOString()
+            };
+            return [...prev, newReview];
+        }
+    });
+  };
 
   const calculateCourseGrade = (courseId: string, studentId: string): number | null => {
     const courseAssignments = assignments.filter(a => a.courseId === courseId);
@@ -562,6 +649,15 @@ const App: React.FC = () => {
     return total / allGrades.length;
   };
 
+  const areAllFeesPaidForCourse = (courseId: string, studentId: string): boolean => {
+    const courseFeesForStudent = fees.filter(f => f.courseId === courseId && f.studentId === studentId);
+    if (courseFeesForStudent.length === 0) {
+        // No fees assigned (free course), so considered paid.
+        return true;
+    }
+    return courseFeesForStudent.every(f => f.status === 'Paid');
+  };
+
 
   const findCourseById = (id: string) => courses.find(c => c.id === id);
   const findAssignmentsByCourseId = (courseId: string) => assignments.filter(a => a.courseId === courseId);
@@ -583,10 +679,20 @@ const App: React.FC = () => {
   const findFeesByCourseId = (courseId: string) => fees.filter(f => f.courseId === courseId);
   const findVideoMaterialsByCourseId = (courseId: string) => videoMaterials.filter(v => v.courseId === courseId).sort((a,b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
   const findVideoNotesByVideoIdAndStudentId = (videoId: string, studentId: string) => videoNotes.filter(n => n.videoId === videoId && n.studentId === studentId).sort((a,b) => a.timestamp - b.timestamp);
+  const findReviewsByCourseId = (courseId: string) => reviews.filter(r => r.courseId === courseId).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const calculateAverageRating = (courseId: string) => {
+    const courseReviews = reviews.filter(r => r.courseId === courseId);
+    if (courseReviews.length === 0) {
+        return { average: 0, count: 0 };
+    }
+    const total = courseReviews.reduce((sum, review) => sum + review.rating, 0);
+    return { average: total / courseReviews.length, count: courseReviews.length };
+  };
 
 
   const contextValue: AppContextType = {
-    currentUser, users, courses, assignments, submissions, quizzes, quizAttempts, attendanceRecords, announcements, fees,
+    currentUser, users, courses, assignments, submissions, quizzes, quizAttempts, attendanceRecords, announcements, fees, reviews,
     login, logout, register, loginWithUserObject, updateUserProfile, createCourse, enrollInCourse,
     createAssignment, submitAssignment, gradeSubmission, findCourseById,
     findAssignmentsByCourseId, findSubmissionsByAssignmentId, findUserById,
@@ -598,7 +704,9 @@ const App: React.FC = () => {
     markAttendance, findAttendanceByCourseForDate, findAttendanceByCourseAndStudent,
     createFee, payFee, findFeesByStudentId, findFeesByCourseId,
     uploadVideoMaterial, deleteVideoMaterial, createVideoNote, findVideoMaterialsByCourseId, findVideoNotesByVideoIdAndStudentId,
-    calculateCourseGrade
+    createCourseReview, findReviewsByCourseId,
+    calculateCourseGrade, calculateAverageRating,
+    areAllFeesPaidForCourse
   };
   
   if (isLoading) {

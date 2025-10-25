@@ -3,8 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAppContext } from '../App';
 import type { Course } from '../types';
 import { Button, Card, Input, TextArea, Modal, Spinner } from './ui';
-import { PlusCircleIcon, BookOpenIcon, CalendarIcon, ChartBarIcon, CertificateIcon, SmartLearnLogo, DownloadIcon } from './Icons';
-import { generateCourseDescription } from '../services/geminiService';
+import { PlusCircleIcon, BookOpenIcon, CalendarIcon, ChartBarIcon, CertificateIcon, SmartLearnLogo, DownloadIcon, StarIcon, SearchIcon } from './Icons';
 
 const formatDueDate = (dueDateStr: string): { text: string; className: string; } => {
     const due = new Date(`${dueDateStr}T23:59:59`); 
@@ -87,9 +86,20 @@ const TabButton: React.FC<{tabName: string, currentTab: string, setTab: (name: s
 const StudentDashboard: React.FC = () => {
   const { currentUser, courses, enrollInCourse } = useAppContext();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const enrolledCourses = courses.filter(c => c.studentIds?.includes(currentUser!.id));
-  const availableCourses = courses.filter(c => !c.studentIds?.includes(currentUser!.id));
+  
+  const availableCourses = useMemo(() => {
+    const allAvailable = courses.filter(c => !c.studentIds?.includes(currentUser!.id));
+    if (!searchQuery) {
+        return allAvailable;
+    }
+    return allAvailable.filter(course =>
+        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [courses, currentUser, searchQuery]);
 
   const handleEnroll = (courseId: string) => {
     enrollInCourse(courseId);
@@ -113,13 +123,28 @@ const StudentDashboard: React.FC = () => {
       </section>
       
       <section className="mt-12">
-        <h2 className="text-2xl font-semibold mb-4 border-b-2 border-primary pb-2 inline-block text-copy neon-text-primary">Available Courses</h2>
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+            <h2 className="text-2xl font-semibold border-b-2 border-primary pb-2 inline-block text-copy neon-text-primary">Available Courses</h2>
+            <div className="w-full sm:w-auto sm:max-w-xs">
+                <Input
+                    label=""
+                    id="course-search"
+                    type="search"
+                    placeholder="Search courses..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    icon={<SearchIcon />}
+                />
+            </div>
+        </div>
         {availableCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {availableCourses.map(course => <CourseCard key={course.id} course={course} onAction={() => handleEnroll(course.id)} actionLabel="Enroll Now" />)}
             </div>
         ) : (
-            <p className="text-copy-light">No new courses available at the moment.</p>
+            <p className="text-copy-light">
+              {searchQuery ? `No courses found for "${searchQuery}".` : "No new courses available at the moment."}
+            </p>
         )}
       </section>
     </div>
@@ -130,8 +155,7 @@ const TeacherDashboard: React.FC = () => {
   const { currentUser, courses, createCourse } = useAppContext();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newCourse, setNewCourse] = useState({ title: '', description: '', startDate: '', endDate: '' });
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', startDate: '', endDate: '', fee: '' });
 
   const myCourses = courses.filter(c => c.teacherId === currentUser!.id);
 
@@ -139,28 +163,15 @@ const TeacherDashboard: React.FC = () => {
     setNewCourse({ ...newCourse, [e.target.name]: e.target.value });
   };
 
-  const handleGenerateDescription = async () => {
-    if (!newCourse.title) {
-        alert("Please enter a course title first.");
-        return;
-    }
-    setIsGenerating(true);
-    try {
-        const description = await generateCourseDescription(newCourse.title);
-        setNewCourse(prev => ({ ...prev, description }));
-    } catch (error) {
-        console.error("Failed to generate description:", error);
-        alert("Could not generate description. Please try again.");
-    } finally {
-        setIsGenerating(false);
-    }
-  }
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createCourse(newCourse);
+    const courseData = {
+        ...newCourse,
+        fee: newCourse.fee ? parseFloat(newCourse.fee) : undefined,
+    };
+    createCourse(courseData);
     setIsModalOpen(false);
-    setNewCourse({ title: '', description: '', startDate: '', endDate: '' });
+    setNewCourse({ title: '', description: '', startDate: '', endDate: '', fee: '' });
   };
   
   return (
@@ -185,16 +196,12 @@ const TeacherDashboard: React.FC = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Course">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Course Title" name="title" value={newCourse.title} onChange={handleChange} required />
-          <div>
-            <TextArea label="Description" name="description" value={newCourse.description} onChange={handleChange} required rows={4}/>
-            <Button type="button" variant="secondary" className="mt-2 text-sm" onClick={handleGenerateDescription} disabled={isGenerating}>
-              {isGenerating ? 'Generating...' : '✨ Generate with AI'}
-            </Button>
-          </div>
+          <TextArea label="Description" name="description" value={newCourse.description} onChange={handleChange} required rows={4}/>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Start Date" name="startDate" type="date" value={newCourse.startDate} onChange={handleChange} required />
             <Input label="End Date" name="endDate" type="date" value={newCourse.endDate} onChange={handleChange} required />
           </div>
+           <Input label="Course Fee ($)" name="fee" type="number" value={newCourse.fee} onChange={handleChange} min="0" step="0.01" placeholder="e.g., 99.99" />
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button type="submit">Create Course</Button>
@@ -475,17 +482,38 @@ const CertificateTemplate: React.FC<{ course: Course; forDownloadRef: React.RefO
 };
 
 const CertificatesOverview: React.FC = () => {
-    const { currentUser, courses, calculateCourseGrade } = useAppContext();
+    const { currentUser, courses, calculateCourseGrade, areAllFeesPaidForCourse } = useAppContext();
+    const navigate = useNavigate();
     const [courseToDownload, setCourseToDownload] = useState<Course | null>(null);
     const certificateRef = useRef<HTMLDivElement>(null);
 
-    const completedCourses = useMemo(() => {
-        if (!currentUser) return [];
-        const today = new Date();
-        return courses
+    const { certifiableCourses, lockedCourses } = useMemo(() => {
+        if (!currentUser) return { certifiableCourses: [], lockedCourses: [] };
+        
+        const now = new Date();
+        const potentiallyCertifiableCourses = courses
             .filter(c => c.studentIds?.includes(currentUser.id))
-            .filter(c => new Date(c.endDate) < today);
-    }, [currentUser, courses]);
+            .filter(c => {
+                const endDate = new Date(c.endDate);
+                // Set to end of day to ensure the full day has passed
+                endDate.setHours(23, 59, 59, 999);
+                return endDate < now;
+            });
+
+        const certifiable: Course[] = [];
+        const locked: Course[] = [];
+
+        potentiallyCertifiableCourses.forEach(course => {
+            if (areAllFeesPaidForCourse(course.id, currentUser.id)) {
+                certifiable.push(course);
+            } else {
+                locked.push(course);
+            }
+        });
+
+        return { certifiableCourses: certifiable, lockedCourses: locked };
+    }, [currentUser, courses, areAllFeesPaidForCourse]);
+
 
     useEffect(() => {
         if (courseToDownload && certificateRef.current && (window as any).html2canvas) {
@@ -517,36 +545,65 @@ const CertificatesOverview: React.FC = () => {
             <Card>
                 <div className="p-6">
                     <h2 className="text-2xl font-semibold mb-6 border-b-2 border-primary pb-2 inline-block text-copy neon-text-primary">My Certificates</h2>
-                    {completedCourses.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {completedCourses.map(course => {
-                                const grade = calculateCourseGrade(course.id, currentUser!.id);
-                                return (
-                                    <div key={course.id} className="p-6 bg-surface/60 rounded-lg border border-white/10 flex flex-col justify-between hover:border-primary/50 transition-colors">
+                    
+                    {certifiableCourses.length > 0 && (
+                        <>
+                            <h3 className="text-xl font-semibold text-copy mb-4">Available Certificates</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {certifiableCourses.map(course => {
+                                    const grade = calculateCourseGrade(course.id, currentUser!.id);
+                                    return (
+                                        <div key={course.id} className="p-6 bg-surface/60 rounded-lg border border-white/10 flex flex-col justify-between hover:border-primary/50 transition-colors">
+                                            <div>
+                                                <h3 className="text-xl font-bold text-copy">{course.title}</h3>
+                                                <p className="text-copy-light">Completed on: {new Date(course.endDate).toLocaleDateString()}</p>
+                                                <p className="mt-4 text-2xl font-bold neon-text-primary">
+                                                    Final Grade: {grade !== null ? `${grade.toFixed(1)}%` : 'Not Graded'}
+                                                </p>
+                                            </div>
+                                            <Button 
+                                                onClick={() => handleDownloadClick(course)}
+                                                className="mt-4 w-full"
+                                                disabled={!!courseToDownload}
+                                            >
+                                                {courseToDownload?.id === course.id ? (
+                                                    <><Spinner/> <span className="ml-2">Preparing...</span></>
+                                                ) : (
+                                                    <><DownloadIcon/><span className="ml-2">Download Certificate</span></>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+                    
+                    {lockedCourses.length > 0 && (
+                        <div className="mt-8">
+                            <h3 className="text-xl font-semibold text-copy mb-4">Locked Certificates</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {lockedCourses.map(course => (
+                                    <div key={course.id} className="p-6 bg-danger/10 rounded-lg border border-danger/50 flex flex-col justify-between">
                                         <div>
                                             <h3 className="text-xl font-bold text-copy">{course.title}</h3>
                                             <p className="text-copy-light">Completed on: {new Date(course.endDate).toLocaleDateString()}</p>
-                                            <p className="mt-4 text-2xl font-bold neon-text-primary">
-                                                Final Grade: {grade !== null ? `${grade.toFixed(1)}%` : 'Not Graded'}
-                                            </p>
                                         </div>
-                                        <Button 
-                                            onClick={() => handleDownloadClick(course)}
-                                            className="mt-4 w-full"
-                                            disabled={!!courseToDownload}
-                                        >
-                                            {courseToDownload?.id === course.id ? (
-                                                <><Spinner/> <span className="ml-2">Preparing...</span></>
-                                            ) : (
-                                                <><DownloadIcon/><span className="ml-2">Download Certificate</span></>
-                                            )}
-                                        </Button>
+                                        <div className="mt-4 text-center">
+                                            <p className="font-semibold text-danger">Outstanding fees remaining.</p>
+                                            <p className="text-copy-light text-sm mb-4">Complete your payment to unlock the certificate.</p>
+                                            <Button onClick={() => navigate('/profile')} variant="secondary">
+                                                Go to My Fees
+                                            </Button>
+                                        </div>
                                     </div>
-                                );
-                            })}
+                                ))}
+                            </div>
                         </div>
-                    ) : (
-                        <p className="text-copy-light">You have not completed any courses yet. Certificates will appear here once you finish a course.</p>
+                    )}
+
+                    {certifiableCourses.length === 0 && lockedCourses.length === 0 && (
+                         <p className="text-copy-light">You have not completed any courses yet. Certificates will appear here once you finish a course and clear any outstanding fees.</p>
                     )}
                 </div>
             </Card>
@@ -560,6 +617,15 @@ const CertificatesOverview: React.FC = () => {
     );
 };
 
+const StarRatingDisplay: React.FC<{ rating: number }> = ({ rating }) => {
+    return (
+        <div className="flex items-center">
+            {[...Array(5)].map((_, i) => (
+                <StarIcon key={i} filled={i < rating} className={`h-5 w-5 ${i < rating ? 'text-yellow-400' : 'text-gray-500'}`} />
+            ))}
+        </div>
+    );
+};
 
 interface CourseCardProps {
     course: Course;
@@ -568,18 +634,30 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course, onAction, actionLabel }) => {
-    const { findUserById } = useAppContext();
+    const { findUserById, calculateAverageRating } = useAppContext();
     const teacher = findUserById(course.teacherId);
+    const { average, count } = calculateAverageRating(course.id);
 
     return (
         <Card className="flex flex-col transform hover:-translate-y-1 transition-transform duration-300 group hover:shadow-[0_0_20px_theme(colors.primary/0.5)] hover:border-primary/50">
             <div className="p-6 flex-grow relative border-b-2 border-primary/50">
                 <BookOpenIcon className="h-12 w-12 text-primary/10 absolute right-4 top-4 transform group-hover:scale-110 transition-transform"/>
-                <h3 className="text-2xl font-bold text-copy ">{course.title}</h3>
-                <p className="text-sm text-copy-light mb-4 flex items-center">
+                <div className="flex justify-between items-start">
+                    <h3 className="text-2xl font-bold text-copy ">{course.title}</h3>
+                    {course.fee && course.fee > 0 ? (
+                        <span className="bg-accent/20 text-accent font-bold py-1 px-3 rounded-full text-lg">${course.fee}</span>
+                    ) : (
+                        <span className="bg-success/20 text-success font-bold py-1 px-3 rounded-full text-lg">Free</span>
+                    )}
+                </div>
+                <p className="text-sm text-copy-light mb-2 flex items-center mt-2">
                     <CalendarIcon className="h-4 w-4 mr-2" />
                     {new Date(course.startDate).toLocaleDateString()} - {new Date(course.endDate).toLocaleDateString()}
                 </p>
+                <div className="flex items-center text-sm text-copy-light">
+                    <StarRatingDisplay rating={average} />
+                    <span className="ml-2">({count} {count === 1 ? 'review' : 'reviews'})</span>
+                </div>
             </div>
             <div className="p-6 flex-grow">
                 <p className="text-sm text-copy-light mb-4">Taught by {teacher?.name || 'Unknown'}</p>

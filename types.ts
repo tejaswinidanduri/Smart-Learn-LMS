@@ -25,6 +25,16 @@ export interface Course {
   endDate: string;   // ISO string date part YYYY-MM-DD
   teacherId: string;
   studentIds?: string[];
+  fee?: number;
+}
+
+export interface CourseReview {
+  id: string;
+  courseId: string;
+  studentId: string;
+  rating: number; // 1 to 5
+  comment: string;
+  createdAt: string; // ISO string
 }
 
 export interface Assignment {
@@ -33,6 +43,9 @@ export interface Assignment {
   title: string;
   description: string;
   dueDate: string; // ISO string format
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
 }
 
 export interface Submission {
@@ -83,7 +96,6 @@ export interface VideoMaterial {
   fileType: string;
   fileUrl: string;
   uploadedAt: string; // ISO string
-  transcript: string;
 }
 
 export interface VideoNote {

@@ -23,13 +23,21 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', c
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  icon?: React.ReactNode;
 }
 
-export const Input: React.FC<InputProps> = ({ label, id, ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, id, icon, ...props }) => {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-copy-light">{label}</label>
-      <input id={id} className="mt-1 block w-full bg-surface/50 border border-white/20 rounded-lg py-2 px-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm placeholder-gray-500 focus:shadow-[0_0_10px_theme(colors.primary)]" {...props} />
+      {label && <label htmlFor={id} className="block text-sm font-medium text-copy-light">{label}</label>}
+      <div className={`relative ${label ? 'mt-1' : ''}`}>
+        {icon && <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-copy-lighter">{icon}</div>}
+        <input
+          id={id}
+          className={`block w-full bg-surface/50 border border-white/20 rounded-lg py-2 ${icon ? 'pl-10' : 'px-3'} pr-3 text-copy focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm placeholder-gray-500 focus:shadow-[0_0_10px_theme(colors.primary)]`}
+          {...props}
+        />
+      </div>
     </div>
   );
 };
